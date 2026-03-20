@@ -1,0 +1,5 @@
+{
+  "name": "claude-hooks",
+  "version": "1.0.0",
+  "description": "Custom hooks: frustration detection (two-layer) + bash command guards. Calibrated from 194 sessions / 72,717 user messages."
+}
