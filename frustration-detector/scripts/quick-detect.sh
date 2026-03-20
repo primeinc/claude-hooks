@@ -8,7 +8,7 @@
 set -euo pipefail
 
 input=$(cat)
-prompt=$(echo "$input" | jq -r '.user_prompt // empty')
+prompt=$(echo "$input" | jq -r '.user_prompt // empty' 2>/dev/null)
 
 if [ -z "$prompt" ]; then
   exit 0
