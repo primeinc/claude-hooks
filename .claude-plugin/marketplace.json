@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "local-hooks",
+  "version": "1.0.0",
+  "description": "Local hooks marketplace — frustration detection and bash guards",
+  "owner": {
+    "name": "will"
+  },
+  "plugins": [
+    {
+      "name": "claude-hooks",
+      "description": "Two-layer frustration detection + bash command guards. Calibrated from 194 sessions / 72,717 user messages.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
