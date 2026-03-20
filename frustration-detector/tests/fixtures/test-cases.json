@@ -38,8 +38,8 @@
   {
     "id": "mild-03",
     "input": "is that really what best practices are for semantic detections?",
-    "expected_class": "MILD",
-    "notes": "Questioning quality, not angry"
+    "expected_class": "NONE",
+    "notes": "Questioning quality — too varied for deterministic match without false positives. Formerly MILD when LLM Layer 2 existed."
   },
   {
     "id": "high-01",
@@ -56,8 +56,26 @@
   {
     "id": "high-03",
     "input": "whats best practices for benchmarking and testing these hooks create a dev dir and consolidate and stop with this nonsensical lazy approach",
+    "expected_class": "NONE",
+    "notes": "Hostile but no profanity/caps — cannot be caught deterministically without false positives. Formerly HIGH when LLM Layer 2 existed."
+  },
+  {
+    "id": "high-08",
+    "input": "DO YOUR FUCKING GOD DAMN JOB",
     "expected_class": "HIGH",
-    "notes": "Direct insult of approach quality + demanding restructure"
+    "notes": "Inflected profanity — the literal bug that broke Layer 1 with trailing \\b"
+  },
+  {
+    "id": "high-09",
+    "input": "this is shitty code",
+    "expected_class": "HIGH",
+    "notes": "Inflected profanity — shitty must match"
+  },
+  {
+    "id": "high-10",
+    "input": "STOP BLOCKING MY COMMANDS YOU ABSOLUTE WASTE",
+    "expected_class": "HIGH",
+    "notes": "ALL CAPS anger — 3+ consecutive cap words, no profanity"
   },
   {
     "id": "high-04",

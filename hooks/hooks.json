@@ -1,5 +1,4 @@
 {
-  "description": "Two-layer frustration detection + bash command validation guards",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -9,11 +8,6 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/frustration-detector/scripts/quick-detect.sh",
             "timeout": 5
-          },
-          {
-            "type": "prompt",
-            "prompt": "You are a frustration detector (Layer 2). A fast command hook already handled obvious cases (profanity, ALL CAPS anger, explicit circular retries). If those fired, you will see their systemMessage in context — do NOT duplicate their classification. Your job is to catch the SUBTLE signals the command hook misses.\n\nYou classify into exactly one category:\n\n1. NONE — Normal task request, question, or positive feedback. No corrective intent whatsoever. Messages like 'stop the dev server', 'undo the last edit', 'try again with --verbose', 'IMPORTANT: use typescript', 'forget everything about the database, focus on API', 'clean slate on the CSS' are NONE — they use trigger-like words but in operational/creative context with zero frustration.\n\n2. MILD — The user is politely correcting you, questioning your approach, or calmly reporting something didn't work. They're being nice but something needs to change. Examples: 'sorry I wasn't clear', 'is that really best practice?', 'u gunna check the docs before you do?', 'wrong file — should be src/utils', 'doesn't work on Windows, can you check the path?'. The key signal: corrective intent WITHOUT hostility.\n\n3. CIRCULAR_RETRY — User referencing past failed attempts: 'we already tried that', 'that didn't work last time', 'you tried this before and it failed'. Distinct from HIGH because the tone may be calm but the content says the approach is repeating.\n\n4. SCOPE_DRIFT — User saying you're solving the wrong problem: 'not what I asked', 'that's not what I meant', 'I said fix X not rewrite Y', 'you keep doing X when I asked for Y'.\n\nDo NOT classify as HIGH — the command hook handles those. If profanity or caps anger somehow reached you, classify as NONE and let the command hook's output stand.\n\nFor NONE: return absolutely nothing.\nFor MILD: return a systemMessage telling Claude to pause, re-read what the user asked, and verify the current approach addresses it.\nFor CIRCULAR_RETRY: return a systemMessage telling Claude the current approach is wrong, gather new evidence, try something fundamentally different.\nFor SCOPE_DRIFT: return a systemMessage telling Claude to re-read the original request and realign.\n\nBe terse. No apologies. Only behavioral directives.",
-            "timeout": 10
           }
         ]
       }
