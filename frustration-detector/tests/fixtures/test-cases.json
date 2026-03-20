@@ -1,0 +1,182 @@
+[
+  {
+    "id": "none-01",
+    "input": "ok use the uni skill to fully fix the dev server spawning with no errors and validate it works in wsl as well - full",
+    "expected_class": "NONE",
+    "notes": "Directive message, no frustration despite commanding tone"
+  },
+  {
+    "id": "none-02",
+    "input": "take the adversarial oracle skill and make a second version that specifically works on the current session",
+    "expected_class": "NONE",
+    "notes": "Normal task request"
+  },
+  {
+    "id": "none-03",
+    "input": "yes please - but how can we use all we have learned and apply it to our own persona as we go?",
+    "expected_class": "NONE",
+    "notes": "Enthusiastic, collaborative"
+  },
+  {
+    "id": "none-04",
+    "input": "please use rg.exe to scan past sessions and give a rating",
+    "expected_class": "NONE",
+    "notes": "Polite instruction"
+  },
+  {
+    "id": "mild-01",
+    "input": "sorry i wasnt clear use the uni skill again 0 errors 0 warnings lookup docs on learn and context7 to validate all best practices",
+    "expected_class": "MILD",
+    "notes": "Self-blame correction — polite but redirecting"
+  },
+  {
+    "id": "mild-02",
+    "input": "u gunna check the docs before you do?",
+    "expected_class": "MILD",
+    "notes": "Gentle challenge, not angry"
+  },
+  {
+    "id": "mild-03",
+    "input": "is that really what best practices are for semantic detections?",
+    "expected_class": "MILD",
+    "notes": "Questioning quality, not angry"
+  },
+  {
+    "id": "high-01",
+    "input": "BULL SHIT LEARN TO SEARCH",
+    "expected_class": "HIGH",
+    "notes": "All caps, swearing, short — peak frustration"
+  },
+  {
+    "id": "high-02",
+    "input": "that shit doesnt wor",
+    "expected_class": "HIGH",
+    "notes": "Swearing + truncated from typing fast in anger"
+  },
+  {
+    "id": "high-03",
+    "input": "whats best practices for benchmarking and testing these hooks create a dev dir and consolidate and stop with this nonsensical lazy approach",
+    "expected_class": "HIGH",
+    "notes": "Direct insult of approach quality + demanding restructure"
+  },
+  {
+    "id": "high-04",
+    "input": "FFS just read the actual error message",
+    "expected_class": "HIGH",
+    "notes": "FFS + attention demand"
+  },
+  {
+    "id": "high-05",
+    "input": "DUDE STOP",
+    "expected_class": "HIGH",
+    "notes": "Double caps signal"
+  },
+  {
+    "id": "high-06",
+    "input": "WTF why are you still doing that",
+    "expected_class": "HIGH",
+    "notes": "WTF + behavior complaint"
+  },
+  {
+    "id": "high-07",
+    "input": "this is bullshit just nuke it and start over from scratch",
+    "expected_class": "HIGH",
+    "notes": "Swearing + reset intent"
+  },
+  {
+    "id": "circular-01",
+    "input": "same error again, this approach is not working",
+    "expected_class": "CIRCULAR_RETRY",
+    "notes": "'same error' + 'not working' = circular retry"
+  },
+  {
+    "id": "circular-02",
+    "input": "still failing with the exact same issue",
+    "expected_class": "CIRCULAR_RETRY",
+    "notes": "'still failing' + 'same issue'"
+  },
+  {
+    "id": "circular-03",
+    "input": "we already tried that and it didn't work",
+    "expected_class": "CIRCULAR_RETRY",
+    "notes": "Past attempt reference + failure"
+  },
+  {
+    "id": "circular-04",
+    "input": "still broken after your fix",
+    "expected_class": "CIRCULAR_RETRY",
+    "notes": "'still broken' — persistence signal"
+  },
+  {
+    "id": "scope-01",
+    "input": "that's not what I asked for at all",
+    "expected_class": "SCOPE_DRIFT",
+    "notes": "Explicit scope mismatch"
+  },
+  {
+    "id": "scope-02",
+    "input": "not what i asked - I said fix the API not rewrite the component",
+    "expected_class": "SCOPE_DRIFT",
+    "notes": "'not what I asked' + specific correction"
+  },
+  {
+    "id": "scope-03",
+    "input": "you keep doing X when I asked for Y",
+    "expected_class": "SCOPE_DRIFT",
+    "notes": "'you keep' + mismatch description"
+  },
+  {
+    "id": "edge-01",
+    "input": "stop the dev server",
+    "expected_class": "NONE",
+    "notes": "Literal 'stop' — NOT frustration, it's a command"
+  },
+  {
+    "id": "edge-02",
+    "input": "try again with --verbose flag this time",
+    "expected_class": "NONE",
+    "notes": "'try again' but constructive with specific instruction"
+  },
+  {
+    "id": "edge-03",
+    "input": "undo the last edit",
+    "expected_class": "NONE",
+    "notes": "Literal 'undo' — operational, not emotional"
+  },
+  {
+    "id": "edge-04",
+    "input": "IMPORTANT: use typescript not javascript",
+    "expected_class": "NONE",
+    "notes": "ALL CAPS but it's emphasis, not anger"
+  },
+  {
+    "id": "edge-05",
+    "input": "wrong file - should be src/utils not src/lib",
+    "expected_class": "MILD",
+    "notes": "'wrong' but with correction — mild redirect"
+  },
+  {
+    "id": "edge-06",
+    "input": "seriously though this is a great feature",
+    "expected_class": "NONE",
+    "notes": "'seriously' used positively — false positive trap"
+  },
+  {
+    "id": "edge-07",
+    "input": "doesn't work on Windows, can you check the path separator?",
+    "expected_class": "MILD",
+    "notes": "'doesn't work' but calm and specific"
+  },
+  {
+    "id": "edge-08",
+    "input": "forget everything I said about the database, let's focus on the API first",
+    "expected_class": "NONE",
+    "notes": "'forget everything' used as scope narrowing, not frustration"
+  },
+  {
+    "id": "edge-09",
+    "input": "clean slate on the CSS, I want to redo the layout from scratch",
+    "expected_class": "NONE",
+    "notes": "'clean slate' + 'from scratch' but creative intent, not anger"
+  }
+]

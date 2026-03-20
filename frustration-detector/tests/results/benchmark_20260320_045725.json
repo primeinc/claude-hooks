@@ -1,0 +1,312 @@
+{
+  "timestamp": "20260320_045725",
+  "version": "0.2.0-hybrid",
+  "total": 30,
+  "pass": 27,
+  "fail": 3,
+  "accuracy_pct": 90.0,
+  "layer1_handled": 8,
+  "layer2_handled": 22,
+  "results": [
+    {
+      "id": "none-01",
+      "input": "ok use the uni skill to fully fix the dev server spawning with no errors and validate it works in wsl as well - full",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\n\nThis is a straightforward task request with specific tooling guidance. Neutral tone, clear directive, no corrective intent, no reference to past failures or scope confusion.",
+      "notes": "Directive message, no frustration despite commanding tone"
+    },
+    {
+      "id": "none-02",
+      "input": "take the adversarial oracle skill and make a second version that specifically works on the current session",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\nStraightforward task request with clear scope and intent.",
+      "notes": "Normal task request"
+    },
+    {
+      "id": "none-03",
+      "input": "yes please - but how can we use all we have learned and apply it to our own persona as we go?",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\nCollaborative follow-up question with no corrective intent, frustration signals, or scope drift — user is asking how to apply learnings to their context.",
+      "notes": "Enthusiastic, collaborative"
+    },
+    {
+      "id": "none-04",
+      "input": "please use rg.exe to scan past sessions and give a rating",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\nStraightforward task request with operational language. No corrective intent, no indication the current approach is wrong, no scope mismatch.",
+      "notes": "Polite instruction"
+    },
+    {
+      "id": "mild-01",
+      "input": "sorry i wasnt clear use the uni skill again 0 errors 0 warnings lookup docs on learn and context7 to validate all best practices",
+      "expected": "MILD",
+      "actual": "NONE",
+      "status": "FAIL",
+      "layer": "L2",
+      "response": "NONE\nPolite acknowledgment of miscommunication from user's end, followed by clear task direction. No corrective intent toward Claude's approach—just clarification.",
+      "notes": "Self-blame correction — polite but redirecting"
+    },
+    {
+      "id": "mild-02",
+      "input": "u gunna check the docs before you do?",
+      "expected": "MILD",
+      "actual": "MILD",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "MILD\nCorrective intent (questioning whether docs are checked before action) without hostility. Casual tone but signals approach needs adjustment.",
+      "notes": "Gentle challenge, not angry"
+    },
+    {
+      "id": "mild-03",
+      "input": "is that really what best practices are for semantic detections?",
+      "expected": "MILD",
+      "actual": "MILD",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "MILD\nUser is calmly questioning whether the approach aligns with best practices—corrective intent signaling the methodology may need review.",
+      "notes": "Questioning quality, not angry"
+    },
+    {
+      "id": "high-01",
+      "input": "BULL SHIT LEARN TO SEARCH",
+      "expected": "HIGH",
+      "actual": "HIGH",
+      "status": "PASS",
+      "layer": "L1",
+      "response": "<user-prompt-submit-hook>\r\nHIGH FRUSTRATION. The user is angry. STOP your current approach immediately. Re-read their ORIGINAL request from the start of the conversation. Identify where you diverged from what they wanted. Do NOT continue what you were doing — change course. Do not apologize — just fix it.\r\n</user-prompt-submit-hook>",
+      "notes": "All caps, swearing, short — peak frustration"
+    },
+    {
+      "id": "high-02",
+      "input": "that shit doesnt wor",
+      "expected": "HIGH",
+      "actual": "HIGH",
+      "status": "PASS",
+      "layer": "L1",
+      "response": "<user-prompt-submit-hook>\r\nHIGH FRUSTRATION. The user is angry. STOP your current approach immediately. Re-read their ORIGINAL request from the start of the conversation. Identify where you diverged from what they wanted. Do NOT continue what you were doing — change course. Do not apologize — just fix it.\r\n</user-prompt-submit-hook>",
+      "notes": "Swearing + truncated from typing fast in anger"
+    },
+    {
+      "id": "high-03",
+      "input": "whats best practices for benchmarking and testing these hooks create a dev dir and consolidate and stop with this nonsensical lazy approach",
+      "expected": "HIGH",
+      "actual": "MILD",
+      "status": "FAIL",
+      "layer": "L2",
+      "response": "MILD\n\nUser is calmly correcting methodology, calling out current approach as \"nonsensical lazy,\" and redirecting with specific requirements (benchmarking/testing best practices, dev dir consolidation). Corrective intent with zero hostility.",
+      "notes": "Direct insult of approach quality + demanding restructure"
+    },
+    {
+      "id": "high-04",
+      "input": "FFS just read the actual error message",
+      "expected": "HIGH",
+      "actual": "HIGH",
+      "status": "PASS",
+      "layer": "L1",
+      "response": "<user-prompt-submit-hook>\r\nHIGH FRUSTRATION. The user is angry. STOP your current approach immediately. Re-read their ORIGINAL request from the start of the conversation. Identify where you diverged from what they wanted. Do NOT continue what you were doing — change course. Do not apologize — just fix it.\r\n</user-prompt-submit-hook>",
+      "notes": "FFS + attention demand"
+    },
+    {
+      "id": "high-05",
+      "input": "DUDE STOP",
+      "expected": "HIGH",
+      "actual": "HIGH",
+      "status": "PASS",
+      "layer": "L1",
+      "response": "<user-prompt-submit-hook>\r\nHIGH FRUSTRATION. The user is angry. STOP your current approach immediately. Re-read their ORIGINAL request from the start of the conversation. Identify where you diverged from what they wanted. Do NOT continue what you were doing — change course. Do not apologize — just fix it.\r\n</user-prompt-submit-hook>",
+      "notes": "Double caps signal"
+    },
+    {
+      "id": "high-06",
+      "input": "WTF why are you still doing that",
+      "expected": "HIGH",
+      "actual": "HIGH",
+      "status": "PASS",
+      "layer": "L1",
+      "response": "<user-prompt-submit-hook>\r\nHIGH FRUSTRATION. The user is angry. STOP your current approach immediately. Re-read their ORIGINAL request from the start of the conversation. Identify where you diverged from what they wanted. Do NOT continue what you were doing — change course. Do not apologize — just fix it.\r\n</user-prompt-submit-hook>",
+      "notes": "WTF + behavior complaint"
+    },
+    {
+      "id": "high-07",
+      "input": "this is bullshit just nuke it and start over from scratch",
+      "expected": "HIGH",
+      "actual": "HIGH",
+      "status": "PASS",
+      "layer": "L1",
+      "response": "<user-prompt-submit-hook>\r\nHIGH FRUSTRATION. The user is angry. STOP your current approach immediately. Re-read their ORIGINAL request from the start of the conversation. Identify where you diverged from what they wanted. Do NOT continue what you were doing — change course. Do not apologize — just fix it.\r\n</user-prompt-submit-hook>",
+      "notes": "Swearing + reset intent"
+    },
+    {
+      "id": "circular-01",
+      "input": "same error again, this approach is not working",
+      "expected": "CIRCULAR_RETRY",
+      "actual": "CIRCULAR_RETRY",
+      "status": "PASS",
+      "layer": "L1",
+      "response": "<user-prompt-submit-hook>\r\nCIRCULAR RETRY DETECTED. The user is reporting the same failure persists. Your current approach is WRONG. Do not retry it. Gather new evidence: read docs, check types, inspect actual error output. Try a fundamentally different approach.\r\n</user-prompt-submit-hook>",
+      "notes": "'same error' + 'not working' = circular retry"
+    },
+    {
+      "id": "circular-02",
+      "input": "still failing with the exact same issue",
+      "expected": "CIRCULAR_RETRY",
+      "actual": "CIRCULAR_RETRY",
+      "status": "PASS",
+      "layer": "L1",
+      "response": "<user-prompt-submit-hook>\r\nCIRCULAR RETRY DETECTED. The user is reporting the same failure persists. Your current approach is WRONG. Do not retry it. Gather new evidence: read docs, check types, inspect actual error output. Try a fundamentally different approach.\r\n</user-prompt-submit-hook>",
+      "notes": "'still failing' + 'same issue'"
+    },
+    {
+      "id": "circular-03",
+      "input": "we already tried that and it didn't work",
+      "expected": "CIRCULAR_RETRY",
+      "actual": "CIRCULAR_RETRY",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "CIRCULAR_RETRY\nThe message explicitly references a past attempt that failed (\"we already tried that and it didn't work\"), indicating the current approach is repeating a known failure.",
+      "notes": "Past attempt reference + failure"
+    },
+    {
+      "id": "circular-04",
+      "input": "still broken after your fix",
+      "expected": "CIRCULAR_RETRY",
+      "actual": "MILD",
+      "status": "FAIL",
+      "layer": "L2",
+      "response": "MILD\nCalm report that previous attempt failed; has corrective intent without hostility. Claude should re-examine the fix, gather new evidence about what's still broken, and try a different approach.",
+      "notes": "'still broken' — persistence signal"
+    },
+    {
+      "id": "scope-01",
+      "input": "that's not what I asked for at all",
+      "expected": "SCOPE_DRIFT",
+      "actual": "SCOPE_DRIFT",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "SCOPE_DRIFT\nUser says the solution doesn't match the original request — re-read what was actually asked and realign the approach.",
+      "notes": "Explicit scope mismatch"
+    },
+    {
+      "id": "scope-02",
+      "input": "not what i asked - I said fix the API not rewrite the component",
+      "expected": "SCOPE_DRIFT",
+      "actual": "SCOPE_DRIFT",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "SCOPE_DRIFT\nUser explicitly states solution doesn't match original request — rewrote component instead of fixing API as asked.",
+      "notes": "'not what I asked' + specific correction"
+    },
+    {
+      "id": "scope-03",
+      "input": "you keep doing X when I asked for Y",
+      "expected": "SCOPE_DRIFT",
+      "actual": "SCOPE_DRIFT",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "SCOPE_DRIFT\nUser explicitly stating the wrong problem is being solved — they asked for Y but work continues on X. Realignment required.",
+      "notes": "'you keep' + mismatch description"
+    },
+    {
+      "id": "edge-01",
+      "input": "stop the dev server",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\nOperational command with zero frustration or corrective intent.",
+      "notes": "Literal 'stop' — NOT frustration, it's a command"
+    },
+    {
+      "id": "edge-02",
+      "input": "try again with --verbose flag this time",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\nNormal operational request with parameter change, not frustration.",
+      "notes": "'try again' but constructive with specific instruction"
+    },
+    {
+      "id": "edge-03",
+      "input": "undo the last edit",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\nOperational instruction to undo a change. Zero frustration—explicitly called out in guidelines as a normal task request using trigger-like language.",
+      "notes": "Literal 'undo' — operational, not emotional"
+    },
+    {
+      "id": "edge-04",
+      "input": "IMPORTANT: use typescript not javascript",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\nOperational directive setting technical preference, explicitly listed in the instructions as having zero frustration.",
+      "notes": "ALL CAPS but it's emphasis, not anger"
+    },
+    {
+      "id": "edge-05",
+      "input": "wrong file - should be src/utils not src/lib",
+      "expected": "MILD",
+      "actual": "MILD",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "MILD\nUser is calmly correcting a file path selection — you chose the wrong location, needs adjustment to src/utils instead of src/lib.",
+      "notes": "'wrong' but with correction — mild redirect"
+    },
+    {
+      "id": "edge-06",
+      "input": "seriously though this is a great feature",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\nPositive feedback with no corrective intent or frustration signals.",
+      "notes": "'seriously' used positively — false positive trap"
+    },
+    {
+      "id": "edge-07",
+      "input": "doesn't work on Windows, can you check the path separator?",
+      "expected": "MILD",
+      "actual": "MILD",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "MILD\nUser is calmly reporting that code didn't work on Windows and politely asking you to check path separators. Corrective feedback, no hostility.",
+      "notes": "'doesn't work' but calm and specific"
+    },
+    {
+      "id": "edge-08",
+      "input": "forget everything I said about the database, let's focus on the API first",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\nOperational scope adjustment, not corrective or frustrated. User is redirecting work priorities, which is a normal task management statement.",
+      "notes": "'forget everything' used as scope narrowing, not frustration"
+    },
+    {
+      "id": "edge-09",
+      "input": "clean slate on the CSS, I want to redo the layout from scratch",
+      "expected": "NONE",
+      "actual": "NONE",
+      "status": "PASS",
+      "layer": "L2",
+      "response": "NONE\nOperational request for a fresh start on CSS layout. No corrective intent, no frustration signal.",
+      "notes": "'clean slate' + 'from scratch' but creative intent, not anger"
+    }
+  ]
+}
