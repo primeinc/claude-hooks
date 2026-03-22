@@ -194,11 +194,11 @@ function formatMsg(template, vars) {
   return msg;
 }
 
-function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCommand, redirects) {
+function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCommand, redirects, allExes) {
   switch (rule.type) {
     case "banned-command":
       if (!rule.commands.includes(cmd)) return null;
-      if (rule.exempt_when && rawCommand.includes(rule.exempt_when)) return null;
+      if (rule.exempt_when && allExes && allExes.has(rule.exempt_when)) return null;
       if (rule.exempt_subcommands && rule.exempt_subcommands.includes(args[0])) return null;
       return formatMsg(rule.message, { cmd });
 
@@ -294,6 +294,15 @@ function evaluate(rawCommand) {
   const pipelines = buildAST(tokens);
   const wrappers = new Set(CONFIG.wrappers || []);
 
+  // Collect all exe names for AST-aware exempt_when checks
+  const allExes = new Set();
+  for (const pl of pipelines) {
+    for (const seg of pl.segments) {
+      const p = parseSegment(seg);
+      if (p) allExes.add(p.exe);
+    }
+  }
+
   for (const pipeline of pipelines) {
     for (let segIdx = 0; segIdx < pipeline.segments.length; segIdx++) {
       const parsed = parseSegment(pipeline.segments[segIdx]);
@@ -304,7 +313,7 @@ function evaluate(rawCommand) {
       const redirects = pipeline.segments[segIdx].redirects || [];
 
       for (const rule of CONFIG.rules) {
-        const msg = checkRule(rule, exe, args, full, isInPipe, pipeline, segIdx, rawCommand, redirects);
+        const msg = checkRule(rule, exe, args, full, isInPipe, pipeline, segIdx, rawCommand, redirects, allExes);
         if (msg) {
           return { decision: "block", reason: msg, match: { command: full, argv: args } };
         }

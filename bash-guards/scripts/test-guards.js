@@ -90,6 +90,8 @@ check("block", "egrep",                    "egrep 'pattern' file.txt",     msg("
 check("block", "fgrep",                    "fgrep 'literal' file.txt",     msg("no-grep", {cmd:"fgrep"}));
 check("allow", "rg.exe exemption",         "rg.exe --files | rg.exe foo");
 check("allow", "grep in string arg",       'echo "grep is cool"');
+check("block", "grep with rg.exe in string","echo 'use rg.exe' && grep -r secret .", msg("no-grep", {cmd:"grep"}));
+check("block", "grep with rg.exe in arg",  "grep -r rg.exe.bak .",          msg("no-grep", {cmd:"grep"}));
 
 // ── Rule: truncation ──
 check("block", "pipe to tail",             "eslint src/ | tail -5",        msg("no-test-pipe"));
