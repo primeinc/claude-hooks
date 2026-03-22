@@ -55,13 +55,13 @@ const RULES = [
   // No trailing \b on profanity stems so inflected forms (fucking, shitty) match.
   // Direction markers: you/your/you're, this/that, what the, holy
   {
-    pattern: /\b(your|you're|you are)\b.{0,40}\b(fuck|shit|crap|damn|cunt|ass\b)|\b(fuck|shit|cunt)\w*.{0,20}\b(you|your|you're)\b/i,
+    pattern: /\b(your|you're|you are)\b.{0,40}\b(fuck|shit|crap|damn|cunt|ass\b|asshole)|\b(fuck|shit|cunt)\w*.{0,20}\b(you|your|you're)\b/i,
     category: "HIGH",
   },
 
   // HIGH: "you [profanity]" — but NOT after question words (can you, do you, will you)
   {
-    pattern: /\byou\b.{0,15}\b(fuck|shit|crap|cunt|ass\b)/i,
+    pattern: /\byou\b.{0,15}\b(fuck|shit|crap|cunt|ass\b|asshole)/i,
     category: "HIGH",
     exclude: /\b(can|could|would|will|do|did|should|how do|if) you\b/i,
   },
@@ -81,7 +81,7 @@ const RULES = [
 
   // HIGH: profanity in ALL CAPS context (rage regardless of direction)
   {
-    pattern: /[A-Z]{3,}.{0,20}\b(FUCK|SHIT|DAMN|CRAP|CUNT|ASS)\b|\b(FUCK|SHIT|DAMN|CRAP|CUNT)\w*.{0,20}[A-Z]{3,}/,
+    pattern: /[A-Z]{3,}.{0,20}\b(FUCK|SHIT|DAMN|CRAP|CUNT|ASS|ASSHOLE)\b|\b(FUCK|SHIT|DAMN|CRAP|CUNT|ASSHOLE)\w*.{0,20}[A-Z]{3,}/,
     category: "HIGH",
   },
 
