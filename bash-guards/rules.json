@@ -9,11 +9,11 @@
     },
     {
       "id": "no-grep",
-      "description": "Use the Grep tool instead",
+      "description": "Use rg.exe instead",
       "type": "banned-command",
       "commands": ["grep", "egrep", "fgrep"],
       "exempt_when": "rg.exe",
-      "message": "{cmd} is banned. Use the Grep tool instead."
+      "message": "{cmd} is banned. Use rg.exe instead."
     },
     {
       "id": "no-truncation",
