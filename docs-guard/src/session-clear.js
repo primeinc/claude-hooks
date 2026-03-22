@@ -1,16 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * SessionStart hook: clears stale docs-guard state from previous sessions.
- *
- * Hook contract:
- *   stdin:  { session_id, hook_event_name: "SessionStart", source, ... }
- *   exit 0: success
+ * SessionStart hook: clears docs-guard state ONLY on fresh sessions.
+ * Resume/compact/clear should NOT wipe lookups — the user already did the work.
  *
  * @see {@link https://code.claude.com/docs/en/hooks} for hook I/O contract
  */
 
-const { clearState, getStatePath } = require("./state");
+const { clearState, getStatePath, dumpState } = require("./state");
 const { debug, error: logError } = require("./debug");
 
 async function main() {
@@ -22,8 +19,20 @@ async function main() {
   try {
     const hookInput = JSON.parse(raw);
     const source = hookInput.source || "unknown";
-    debug(`SessionStart (${source}): clearing docs-guard state at ${getStatePath()}`);
-    clearState();
+    const sessionId = hookInput.session_id || "unknown";
+    const statePath = getStatePath();
+    const currentState = dumpState();
+    const lookupCount = currentState.lookups?.length || 0;
+
+    debug(`SessionStart source="${source}" session="${sessionId}" statePath="${statePath}" existingLookups=${lookupCount}`);
+
+    if (source === "startup") {
+      debug(`Fresh session — clearing ${lookupCount} lookups`);
+      clearState();
+    } else {
+      debug(`${source} — preserving ${lookupCount} lookups`);
+    }
+
     process.exit(0);
   } catch (e) {
     logError(`Session clear failed:`, e.message);

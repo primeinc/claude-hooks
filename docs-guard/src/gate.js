@@ -157,6 +157,10 @@ function checkLibraries(libraries) {
   const uncovered = [];
   for (const lib of libraries) {
     const lookup = hasLookup(lib.name);
+    debug(`  hasLookup("${lib.name}"): ${lookup.found ? "FOUND" : "NOT FOUND"} (${lookup.lookups.length} matches)`);
+    if (lookup.found) {
+      debug(`    matched via: ${lookup.lookups.map(l => `${l.source}:"${l.library}"`).join(", ")}`);
+    }
     if (!lookup.found) {
       uncovered.push({
         name: lib.name,
@@ -166,6 +170,7 @@ function checkLibraries(libraries) {
   }
 
   if (uncovered.length === 0) {
+    debug(`  All libraries covered — allowing`);
     return { ok: true };
   }
 
@@ -181,8 +186,12 @@ function checkLibraries(libraries) {
  */
 function check(toolName, toolInput) {
   const filePath = toolInput.file_path || "";
+  const { readState } = require("./state");
+  const currentState = readState();
+  debug(`Gate check: ${toolName} on ${filePath} | ${currentState.lookups.length} lookups in state`);
 
   if (!isParseable(filePath)) {
+    debug(`Skipping non-parseable file: ${filePath}`);
     return { ok: true };
   }
 
