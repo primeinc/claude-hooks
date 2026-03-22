@@ -50,6 +50,9 @@ function tokenize(input) {
     }
 
     // Multi-char redirections
+    if (i + 2 < len && input.slice(i, i + 3) === "<<<") {
+      tokens.push({ type: "redir", value: "<<<" }); i += 3; continue;
+    }
     if (i + 3 < len && input.slice(i, i + 4) === "2>&1") {
       tokens.push({ type: "redir", value: "2>&1" }); i += 4; continue;
     }
@@ -310,7 +313,7 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
 }
 
 function evaluate(rawCommand) {
-  // Strip heredoc content — heredoc bodies are data, not commands
+  // Strip heredoc/herestring content — bodies are data, not commands
   rawCommand = rawCommand.replace(/<<-?\s*['"]?(\w+)['"]?\s*\n[\s\S]*?\n\s*\1\b/g, "");
   const tokens = tokenize(rawCommand);
   const pipelines = buildAST(tokens);
@@ -349,6 +352,13 @@ function evaluate(rawCommand) {
           const nested = args.slice(cIdx + 1).join(" ");
           if (nested) {
             const result = evaluate(nested);
+            if (result) return result;
+          }
+        }
+        // Herestring: bash <<< "find . -name foo" — content is executed
+        for (const redir of redirects) {
+          if (redir.op === "<<<" && redir.target) {
+            const result = evaluate(redir.target);
             if (result) return result;
           }
         }
