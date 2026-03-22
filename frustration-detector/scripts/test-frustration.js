@@ -61,13 +61,17 @@ for (const tc of cases) {
 
 for (const category of ["HIGH", "CIRCULAR_RETRY", "SCOPE_DRIFT", "MILD"]) {
   const output = hookOutput(category);
+  const expectedMsg = MESSAGES[category];
 
   if (!output || output.continue !== true) {
     fail++;
     console.log(`FAIL: hookOutput(${category}) missing continue:true`);
-  } else if (!output.systemMessage || !output.systemMessage.includes(category.replace("_", " "))) {
+  } else if (!output.systemMessage || !output.systemMessage.includes(expectedMsg)) {
     fail++;
-    console.log(`FAIL: hookOutput(${category}) systemMessage missing category label`);
+    console.log(`FAIL: hookOutput(${category}) systemMessage doesn't contain expected message`);
+  } else if (!output.systemMessage.includes("<user-prompt-submit-hook>")) {
+    fail++;
+    console.log(`FAIL: hookOutput(${category}) missing hook tag wrapper`);
   } else {
     pass++;
     if (verbose) console.log(`  ok  hookOutput(${category}): valid format`);
