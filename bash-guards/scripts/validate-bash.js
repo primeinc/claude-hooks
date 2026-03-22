@@ -259,8 +259,15 @@ process.stdin.on("end", () => {
 
   const result = evaluate(cmd);
   if (result) {
-    process.stderr.write(result.reason + "\n");
-    process.exit(2);
+    const output = JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: result.reason,
+      },
+    });
+    process.stdout.write(output + "\n");
+    process.exit(0);
   }
   process.exit(0);
 });

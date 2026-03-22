@@ -11,19 +11,19 @@ let fail = 0;
 
 function check(expect, label, cmd) {
   const input = JSON.stringify({ tool_input: { command: cmd } });
-  let exitCode;
+  let stdout = "";
   try {
-    execSync(`node "${SCRIPT}"`, {
+    stdout = execSync(`node "${SCRIPT}"`, {
       input,
       stdio: ["pipe", "pipe", "pipe"],
       shell: true,
-    });
-    exitCode = 0;
+    }).toString();
   } catch (e) {
-    exitCode = e.status;
+    // non-zero exit = unexpected error
+    stdout = "";
   }
 
-  const blocked = exitCode === 2;
+  const blocked = stdout.includes('"permissionDecision":"deny"');
   const ok = (expect === "block" && blocked) || (expect === "allow" && !blocked);
 
   if (ok) {
