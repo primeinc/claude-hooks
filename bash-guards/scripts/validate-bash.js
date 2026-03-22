@@ -295,7 +295,7 @@ function evaluate(rawCommand) {
         }
       }
 
-      // Recurse into wrapper commands
+      // Recurse into wrapper commands (bash -c, sh -lc, env, exec)
       if (wrappers.has(exe)) {
         let cIdx = args.indexOf("-c");
         if (cIdx === -1) cIdx = args.findIndex((a) => /^-[a-zA-Z]*c$/.test(a));
@@ -307,8 +307,37 @@ function evaluate(rawCommand) {
           }
         }
       }
+
+      // env/exec prefix — just strips itself and runs the rest
+      if (exe === "env" || exe === "exec") {
+        // Skip env flags (env -i, env VAR=val), find the actual command
+        let cmdStart = 0;
+        for (let ai = 0; ai < args.length; ai++) {
+          if (args[ai].startsWith("-") || /^[A-Za-z_][A-Za-z0-9_]*=/.test(args[ai])) continue;
+          cmdStart = ai;
+          break;
+        }
+        if (args[cmdStart]) {
+          const result = evaluate(args.slice(cmdStart).join(" "));
+          if (result) return result;
+        }
+      }
     }
   }
+
+  // Recurse into backtick and $() command substitutions
+  const backtickRe = /`([^`]+)`/g;
+  const dollarParenRe = /\$\(([^)]+)\)/g;
+  let subMatch;
+  while ((subMatch = backtickRe.exec(rawCommand)) !== null) {
+    const result = evaluate(subMatch[1]);
+    if (result) return result;
+  }
+  while ((subMatch = dollarParenRe.exec(rawCommand)) !== null) {
+    const result = evaluate(subMatch[1]);
+    if (result) return result;
+  }
+
   return null;
 }
 

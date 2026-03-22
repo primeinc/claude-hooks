@@ -187,6 +187,20 @@ check("block", "bash -c grep",            "bash -c 'grep foo bar'",       "grep 
 check("block", "sh -c find",              "sh -c 'find . -name x'",       "find is banned. Use rg.exe instead.");
 check("block", "bash -lc npx",            "bash -lc 'npx eslint'",        "Package runners (npx) are banned. Do not run arbitrary packages.");
 
+// ── Backtick and $() substitution ──
+check("block", "backtick find",           "`find . -name foo`",            "find is banned. Use rg.exe instead.");
+check("block", "backtick grep",           "echo `grep -r secret .`",      "grep is banned. Use rg.exe instead.");
+check("block", "$() find",               "echo $(find . -name foo)",      "find is banned. Use rg.exe instead.");
+check("block", "$() grep",               "result=$(grep foo bar)",        "grep is banned. Use rg.exe instead.");
+
+// ── env/exec prefix bypass ──
+check("block", "env grep",               "env grep foo bar",              "grep is banned. Use rg.exe instead.");
+check("block", "env find",               "env find . -name x",            "find is banned. Use rg.exe instead.");
+check("block", "env with vars grep",     "env FOO=bar grep -r pat .",     "grep is banned. Use rg.exe instead.");
+check("block", "exec grep",              "exec grep foo bar",             "grep is banned. Use rg.exe instead.");
+check("allow", "env alone",              "env");
+check("allow", "env set var",            "env FOO=bar");
+
 // ── Should ALLOW ──
 check("allow", "git status",              "git status");
 check("allow", "npm run lint",            "npm run lint");
