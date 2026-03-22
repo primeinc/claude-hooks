@@ -128,15 +128,16 @@ claude-hooks/
 ## Known Limitations
 
 **Frustration detector:**
-- **Hostile-but-clean language** ("nonsensical lazy approach", "this is garbage") is not detected. Deterministic regex can't distinguish hostile tone from technical descriptions without unacceptable false positive rates.
-- **Varied phrasing** of mild corrections may not match. The MILD patterns cover common phrasings but not all possible wordings.
+- **ALL CAPS instructions** ("GET THE DOCS", "DELETE IT ALL") trigger HIGH even when they're commands, not rage. The 3+ consecutive cap words rule can't distinguish.
+- **Hostile-but-clean language** ("nonsensical lazy approach", "this is garbage") is not detected without unacceptable false positive rates.
+- **Casual profanity is mostly handled** but edge cases remain. Direction detection uses proximity heuristics that can misjudge at boundary distances.
 
 **Bash guards:**
-- **Heredocs and herestrings** (`bash <<< "find ."`, `bash << EOF`) are not parsed. Commands inside heredocs execute unblocked.
-- **Foreign language eval** (`python -c "os.system('find .')"`, `node -e "execSync('grep')"`) cannot be caught without interpreting the target language. Shell `eval` is caught via transparent prefix handling.
+- **Foreign language eval** (`python -c "os.system('find .')"`, `node -e "execSync('grep')"`) cannot be caught without interpreting the target language. Shell `eval` is caught.
 - **Subshell redirect** (`(npm test) 2>/dev/null`) — redirect on the subshell wrapper is not checked.
+- **Heredoc content** is stripped before scanning but herestring (`<<<`) is not stripped.
 
-**Plugin cache** does not auto-refresh from source. Bump the version in `plugin.json` after making changes.
+**Plugin cache** does not auto-refresh from source. Bump the version in `plugin.json` and run `claude plugin update` after making changes.
 
 ## Calibration
 
