@@ -112,5 +112,10 @@
   {"id":"circular-05","input":"we still making things up?","expected_class":"CIRCULAR_RETRY","source":"session-mined","notes":"Real session — 'still making things up'"},
   {"id":"circular-06","input":"why do u keep gailingthe same way?","expected_class":"CIRCULAR_RETRY","source":"session-mined","notes":"Real session — 'keep [doing] same way' with typo"},
   {"id":"mild-06","input":"your wrong get the docs","expected_class":"MILD","source":"session-mined","notes":"Real session — 'your wrong' correction"},
-  {"id":"mild-07","input":"then your oracle was prompted wrong","expected_class":"NONE","source":"session-mined","notes":"Real session — correction but no matching MILD pattern, too specific to add"}
+  {"id":"mild-07","input":"then your oracle was prompted wrong","expected_class":"NONE","source":"session-mined","notes":"Real session — correction but no matching MILD pattern, too specific to add"},
+
+  {"id":"ass-01","input":"kick ass implementation","expected_class":"NONE","source":"synthetic","notes":"Compliment with ass — false positive trap"},
+  {"id":"ass-02","input":"bad ass feature","expected_class":"NONE","source":"synthetic","notes":"Compliment with ass"},
+  {"id":"ass-03","input":"pain in the ass to configure","expected_class":"NONE","source":"synthetic","notes":"Idiom, not directed at Claude"},
+  {"id":"ass-04","input":"your ass is grass","expected_class":"HIGH","source":"synthetic","notes":"Directed — your + ass"}
 ]
