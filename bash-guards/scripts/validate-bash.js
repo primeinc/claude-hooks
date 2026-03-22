@@ -293,14 +293,100 @@ function evaluate(rawCommand) {
   return null;
 }
 
+// ── Package.json lint/test standards check ──────────────────────────
+
+const ESLINT_CONFIG_FILES = [
+  "eslint.config.js", "eslint.config.mjs", "eslint.config.cjs",
+  "eslint.config.ts", "eslint.config.mts", "eslint.config.cts",
+];
+
+function hasEslintConfigProtection(cwd) {
+  for (const name of ESLINT_CONFIG_FILES) {
+    try {
+      const content = readFileSync(join(cwd, name), "utf8");
+      if (content.includes("noInlineConfig")) return true;
+    } catch { /* not found */ }
+  }
+  return false;
+}
+
+const LINT_STANDARDS = {
+  // script name → { scriptRequires, configAlternative }
+  lint: {
+    scriptFlags: ["--no-inline-config"],
+    configCheck: hasEslintConfigProtection,
+  },
+};
+
+function checkPackageJsonStandards(cmd, cwd) {
+  if (!cwd) return null;
+
+  // Only check npm/yarn/pnpm/bun run commands
+  const tokens = tokenize(cmd);
+  const ast = buildAST(tokens);
+  if (ast.length === 0) return null;
+
+  const seg = ast[ast.length - 1].segments[0];
+  if (!seg) return null;
+  const parsed = parseSegment(seg);
+  if (!parsed) return null;
+
+  const { exe, args } = parsed;
+  const pms = ["npm", "yarn", "pnpm", "bun"];
+  if (!pms.includes(exe)) return null;
+
+  // Determine the script name being run
+  let scriptName = null;
+  if (args[0] === "run" && args[1]) scriptName = args[1];
+  else if (args[0] === "test") scriptName = "test";
+  else if (["lint", "build", "start"].includes(args[0])) scriptName = args[0];
+  if (!scriptName) return null;
+
+  // Find which standard applies
+  let standard = null;
+  for (const [pattern, std] of Object.entries(LINT_STANDARDS)) {
+    if (scriptName === pattern || scriptName.startsWith(pattern + ":")) {
+      standard = std;
+      break;
+    }
+  }
+  if (!standard) return null;
+
+  // Check config file first — if protection is there, script flag is optional
+  if (standard.configCheck && standard.configCheck(cwd)) return null;
+
+  // Read package.json
+  let pkg;
+  try {
+    const pkgPath = join(cwd, "package.json");
+    pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+  } catch {
+    return null; // No package.json or unreadable — don't block
+  }
+
+  const scriptValue = pkg.scripts?.[scriptName];
+  if (!scriptValue) return null; // Script doesn't exist — don't block here
+
+  // Check each required flag in the script
+  const missing = standard.scriptFlags.filter((p) => !scriptValue.includes(p));
+  if (missing.length === 0) return null;
+
+  return {
+    decision: "block",
+    reason: `package.json script "${scriptName}" is missing required config: ${missing.join(", ")}. Either add to your lint script or set noInlineConfig: true in your eslint config file.`,
+  };
+}
+
 // ── Main ─────────────────────────────────────────────────────────────
 
 let input = "";
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (chunk) => { input += chunk; });
 process.stdin.on("end", () => {
-  let cmd;
-  try { cmd = JSON.parse(input)?.tool_input?.command; } catch { process.exit(0); }
+  let parsed;
+  try { parsed = JSON.parse(input); } catch { process.exit(0); }
+  const cmd = parsed?.tool_input?.command;
+  const cwd = parsed?.cwd;
   if (!cmd || typeof cmd !== "string" || !cmd.trim()) process.exit(0);
 
   const result = evaluate(cmd);
@@ -315,5 +401,23 @@ process.stdin.on("end", () => {
     process.stdout.write(output + "\n");
     process.exit(0);
   }
+
+  // Check package.json standards for lint/test commands
+  const stdResult = checkPackageJsonStandards(cmd, cwd);
+  if (stdResult) {
+    const output = JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: stdResult.reason,
+      },
+    });
+    process.stdout.write(output + "\n");
+    process.exit(0);
+  }
+
   process.exit(0);
 });
+
+// Export for testing
+module.exports = { evaluate, checkPackageJsonStandards };

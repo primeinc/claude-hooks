@@ -2,6 +2,7 @@
 "use strict";
 
 const { execSync } = require("child_process");
+const { mkdirSync, writeFileSync, rmSync } = require("fs");
 const path = require("path");
 
 const SCRIPT = path.join(__dirname, "validate-bash.js");
@@ -186,6 +187,75 @@ check("allow", "node script.js",         "node script.js");
 check("allow", "npm run ci",             "npm run ci");
 check("allow", "git log --oneline",      "git log --oneline");
 check("allow", "empty command",          "");
+
+// ── Package.json standards checks ──
+// Create temp dirs with different configs
+
+const TMP = path.join(__dirname, "..", ".tmp-test");
+const mkTmp = (name, pkgJson, eslintConfig) => {
+  const dir = path.join(TMP, name);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(path.join(dir, "package.json"), JSON.stringify(pkgJson, null, 2));
+  if (eslintConfig) writeFileSync(path.join(dir, "eslint.config.js"), eslintConfig);
+  return dir;
+};
+
+const badLint = mkTmp("bad-lint", { scripts: { lint: "eslint src/" } });
+const goodLint = mkTmp("good-lint", { scripts: { lint: "eslint src/ --no-inline-config" } });
+const configLint = mkTmp("config-lint", { scripts: { lint: "eslint src/" } }, "module.exports = [{ linterOptions: { noInlineConfig: true } }]");
+const noScripts = mkTmp("no-scripts", {});
+const noLint = mkTmp("no-lint", { scripts: { build: "tsc" } });
+
+function checkCwd(expect, label, cmd, cwd, exactReason) {
+  const input = JSON.stringify({ tool_input: { command: cmd }, cwd });
+  let stdout = "";
+  try {
+    stdout = execSync(`node "${SCRIPT}"`, {
+      input,
+      stdio: ["pipe", "pipe", "pipe"],
+      shell: true,
+    }).toString();
+  } catch (e) {
+    stdout = "";
+  }
+
+  const result = parseOutput(stdout);
+  const blocked = result !== null;
+
+  if (expect === "block" && !blocked) {
+    fail++;
+    console.log(`FAIL: ${label} (expected=block, got=allow)`);
+    console.log(`      cmd: ${cmd} | cwd: ${cwd}`);
+    return;
+  }
+  if (expect === "allow" && blocked) {
+    fail++;
+    console.log(`FAIL: ${label} (expected=allow, got=block reason="${result.reason}")`);
+    console.log(`      cmd: ${cmd} | cwd: ${cwd}`);
+    return;
+  }
+  if (expect === "block" && exactReason && result.reason !== exactReason) {
+    fail++;
+    console.log(`FAIL: ${label} (reason mismatch)`);
+    console.log(`      expected: "${exactReason}"`);
+    console.log(`      got:      "${result.reason}"`);
+    return;
+  }
+  pass++;
+}
+
+checkCwd("block", "lint missing --no-inline-config", "npm run lint", badLint);
+checkCwd("allow", "lint has --no-inline-config",     "npm run lint", goodLint);
+checkCwd("allow", "lint config file has noInlineConfig", "npm run lint", configLint);
+checkCwd("allow", "no scripts in package.json",      "npm run lint", noScripts);
+checkCwd("allow", "no lint script",                   "npm run build", noLint);
+checkCwd("allow", "git status unaffected",            "git status", badLint);
+checkCwd("block", "yarn lint missing config",         "yarn lint", badLint);
+checkCwd("block", "pnpm run lint missing config",     "pnpm run lint", badLint);
+checkCwd("allow", "npm test not checked",             "npm test", badLint);
+
+// Cleanup
+rmSync(TMP, { recursive: true, force: true });
 
 console.log(`\nResults: ${pass} passed, ${fail} failed`);
 process.exit(fail > 0 ? 1 : 0);
