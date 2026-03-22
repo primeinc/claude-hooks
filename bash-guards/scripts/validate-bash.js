@@ -332,8 +332,9 @@ function evaluate(rawCommand) {
         }
       }
 
-      // env/exec prefix — just strips itself and runs the rest
-      if (exe === "env" || exe === "exec") {
+      // Transparent prefix commands — strip themselves and run the rest
+      const TRANSPARENT_PREFIXES = new Set(["env", "exec", "eval", "command", "time", "nice", "nohup", "strace", "sudo"]);
+      if (TRANSPARENT_PREFIXES.has(exe)) {
         let cmdStart = 0;
         for (let ai = 0; ai < args.length; ai++) {
           if (args[ai].startsWith("-") || /^[A-Za-z_][A-Za-z0-9_]*=/.test(args[ai])) continue;

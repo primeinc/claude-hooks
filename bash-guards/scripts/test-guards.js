@@ -218,6 +218,14 @@ check("block", "exec grep",              "exec grep foo bar",             msg("n
 check("allow", "env alone",              "env");
 check("allow", "env set var",            "env FOO=bar");
 
+// ── Transparent prefix bypasses ──
+check("block", "eval find",              'eval "find . -name foo"',       msg("no-find", {cmd:"find"}));
+check("block", "command grep",           "command grep foo bar",          msg("no-grep", {cmd:"grep"}));
+check("block", "time find",              "time find . -name foo",         msg("no-find", {cmd:"find"}));
+check("block", "nice grep",              "nice grep foo bar",             msg("no-grep", {cmd:"grep"}));
+check("block", "sudo find",              "sudo find . -name foo",         msg("no-find", {cmd:"find"}));
+check("block", "nohup find",             "nohup find . -name foo",        msg("no-find", {cmd:"find"}));
+
 // ── xargs bypass ──
 check("block", "xargs find",             "echo . | xargs find",           msg("no-find", {cmd:"find"}));
 check("block", "xargs grep",             "cat files.txt | xargs grep foo", msg("no-grep", {cmd:"grep"}));
