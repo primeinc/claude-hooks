@@ -163,6 +163,7 @@ check("block", "node bypass with flags",   "node --no-warnings node_modules/esli
 check("block", "node bypass vitest",       "node node_modules/vitest/vitest.mjs run", msg("no-test-tool-by-path"));
 check("allow", "node_modules non-tool",    "node node_modules/blowjob/index.js");
 check("allow", "cat node_modules readme",  "cat node_modules/some-pkg/README.md");
+check("allow", "node -e with node_modules string", 'node -e "console.log(node_modules/eslint)"');
 check("block", "npx after &&",            "cd project && npx eslint .",    msg("no-package-runners", {cmd:"npx"}));
 check("allow", "npx skills find",        "npx skills find react");
 check("allow", "npx skills add",         "npx skills add vercel-labs/agent-skills@react -g -y");

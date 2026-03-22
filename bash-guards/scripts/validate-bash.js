@@ -266,8 +266,16 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
 
     case "banned-arg-pattern": {
       const norm = (s) => s.replace(/\\/g, "/");
-      const allWords = [fullPath, ...args];
-      for (const w of allWords) {
+      // Skip args after -e/-c/--eval (string content, not file paths)
+      const EVAL_FLAGS = new Set(["-e", "-c", "--eval", "--print"]);
+      let skipNext = false;
+      const argsToCheck = [fullPath];
+      for (const a of args) {
+        if (skipNext) { skipNext = false; continue; }
+        if (EVAL_FLAGS.has(a)) { skipNext = true; continue; }
+        argsToCheck.push(a);
+      }
+      for (const w of argsToCheck) {
         const nw = norm(w);
         if (nw.includes(rule.pattern) && rule.arg_must_also_match.some((t) => nw.includes(t))) {
           return rule.message;
