@@ -24,10 +24,10 @@ const MESSAGES = {
   ].join(" "),
 
   CIRCULAR_RETRY: [
-    "CIRCULAR RETRY DETECTED. The user is reporting the same failure persists.",
-    "Your current approach is WRONG. Do not retry it.",
-    "Gather new evidence: read docs, check types, inspect actual error output.",
-    "Try a fundamentally different approach.",
+    "CIRCULAR RETRY DETECTED. The user says it still doesn't work.",
+    "Your last fix did not solve the problem. Do NOT try the same approach again.",
+    "Before doing anything: read the actual error output, check the docs, verify your assumptions.",
+    "Try a fundamentally different approach. If you've tried 3+ things, stop and ask what they're seeing.",
   ].join(" "),
 
   SCOPE_DRIFT: [
@@ -36,8 +36,10 @@ const MESSAGES = {
   ].join(" "),
 
   MILD: [
-    "MILD CORRECTION. Pause. Re-read what the user actually asked.",
-    "Verify your current approach addresses their request before continuing.",
+    "MILD CORRECTION. The user is redirecting you.",
+    "If they gave a specific correction ('wrong file', 'check the docs'), apply it immediately.",
+    "If they're questioning your approach ('are you sure?'), pause and verify before continuing.",
+    "One sentence acknowledgment max, then act.",
   ].join(" "),
 };
 
