@@ -80,8 +80,8 @@ npm test
 Run individually:
 
 ```bash
-npm run test:guards       # 72 bash guard cases
-npm run test:frustration  # 38 frustration detector cases (33 classifier + 5 hook format)
+npm run test:guards       # bash guard cases
+npm run test:frustration  # frustration detector cases
 ```
 
 Benchmark with saved results:
@@ -103,7 +103,7 @@ claude-hooks/
 ├── frustration-detector/
 │   ├── scripts/
 │   │   ├── detect.js            # Deterministic classifier — regex patterns
-│   │   ├── test-frustration.js  # Test harness (38 cases)
+│   │   ├── test-frustration.js  # Test harness
 │   │   └── compare-benchmarks.js # Benchmark comparison across runs
 │   └── tests/
 │       └── fixtures/
@@ -112,7 +112,7 @@ claude-hooks/
 │   ├── rules.json           # Policy rules — all config, no code
 │   └── scripts/
 │       ├── validate-bash.js  # AST engine — tokenizer, parser, policy
-│       └── test-guards.js    # Test harness (72 cases)
+│       └── test-guards.js    # Test harness
 ├── package.json
 └── .gitignore
 ```

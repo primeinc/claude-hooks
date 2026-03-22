@@ -3,6 +3,9 @@
   "version": "1.5.0",
   "private": true,
   "description": "Deterministic frustration detection + AST-based bash command guards for Claude Code",
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "scripts": {
     "test": "node bash-guards/scripts/test-guards.js && node frustration-detector/scripts/test-frustration.js",
     "test:guards": "node bash-guards/scripts/test-guards.js",

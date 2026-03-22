@@ -54,7 +54,7 @@ const RULES = [
   // \bass\b keeps trailing boundary to avoid "assign", "assert", "class".
   // Common typos: "fukc", "fuk", "fcuk", "sht" from rage-typing.
   {
-    pattern: /\b(fuck|fuck|fukc|fuk|fcuk|shit|sht|bullshit|bull\s*shit|damn|crap|cunt)|\bass\b/i,
+    pattern: /\b(fuck|fukc|fuk|fcuk|shit|sht|bullshit|bull\s*shit|damn|crap|cunt)|\bass\b/i,
     category: "HIGH",
   },
 
