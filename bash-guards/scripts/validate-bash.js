@@ -116,23 +116,32 @@ function tokenize(input) {
 function buildAST(tokens) {
   const pipelines = [];
   let curPipeline = { segments: [] };
-  let curSegment = { words: [] };
+  let curSegment = { words: [], redirects: [] };
 
-  for (const tok of tokens) {
+  for (let ti = 0; ti < tokens.length; ti++) {
+    const tok = tokens[ti];
     if (tok.type === "op") {
       if (tok.value === "|") {
         if (curSegment.words.length) curPipeline.segments.push(curSegment);
-        curSegment = { words: [] };
+        curSegment = { words: [], redirects: [] };
       } else {
         if (curSegment.words.length) curPipeline.segments.push(curSegment);
         if (curPipeline.segments.length) pipelines.push(curPipeline);
         curPipeline = { segments: [] };
-        curSegment = { words: [] };
+        curSegment = { words: [], redirects: [] };
+      }
+    } else if (tok.type === "redir") {
+      // Capture redirect operator + next word as target
+      const next = tokens[ti + 1];
+      if (next && next.type === "word") {
+        curSegment.redirects.push({ op: tok.value, target: next.value });
+        ti++; // skip the target word
+      } else {
+        curSegment.redirects.push({ op: tok.value, target: "" });
       }
     } else if (tok.type === "word") {
       curSegment.words.push(tok.value);
     }
-    // redirections are dropped — they're not commands
   }
   if (curSegment.words.length) curPipeline.segments.push(curSegment);
   if (curPipeline.segments.length) pipelines.push(curPipeline);
@@ -165,7 +174,7 @@ function formatMsg(template, vars) {
   return msg;
 }
 
-function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCommand) {
+function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCommand, redirects) {
   switch (rule.type) {
     case "banned-command":
       if (!rule.commands.includes(cmd)) return null;
@@ -207,7 +216,7 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
 
     case "banned-flag":
       if (!rule.commands.includes(cmd)) return null;
-      if (!rule.flags.some((f) => args.includes(f))) return null;
+      if (!rule.flags.some((f) => args.some((a) => a === f || a.startsWith(f + "=")))) return null;
       return formatMsg(rule.message, { cmd });
 
     case "banned-path-pattern": {
@@ -232,6 +241,15 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
       return null;
     }
 
+    case "banned-redirect":
+      if (!redirects || redirects.length === 0) return null;
+      for (const redir of redirects) {
+        if (rule.targets.some((t) => redir.target === t)) {
+          return rule.message;
+        }
+      }
+      return null;
+
     default:
       return null;
   }
@@ -249,9 +267,10 @@ function evaluate(rawCommand) {
 
       const { exe, full, args } = parsed;
       const isInPipe = segIdx > 0;
+      const redirects = pipeline.segments[segIdx].redirects || [];
 
       for (const rule of CONFIG.rules) {
-        const msg = checkRule(rule, exe, args, full, isInPipe, pipeline, segIdx, rawCommand);
+        const msg = checkRule(rule, exe, args, full, isInPipe, pipeline, segIdx, rawCommand, redirects);
         if (msg) {
           return { decision: "block", reason: msg, match: { command: full, argv: args } };
         }

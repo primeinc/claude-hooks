@@ -75,8 +75,23 @@
       "description": "Don't suppress test/lint output with silent/quiet flags",
       "type": "banned-flag",
       "commands": ["npm", "yarn", "pnpm", "bun", "vitest", "jest", "mocha", "eslint", "prettier", "tsc", "biome", "oxlint", "pytest", "phpunit", "rspec", "cargo", "go", "dotnet", "deno"],
-      "flags": ["--silent", "--quiet"],
-      "message": "Do not suppress test/lint output with {cmd} --silent/--quiet. Read the full output."
+      "flags": ["--silent", "--quiet", "--reporter"],
+      "message": "Do not suppress test/lint output with {cmd} --silent/--quiet/--reporter. Read the full output."
+    },
+    {
+      "id": "no-devnull-redirect",
+      "description": "Don't redirect output to /dev/null",
+      "type": "banned-redirect",
+      "targets": ["/dev/null"],
+      "message": "Do not redirect output to /dev/null. Read the full output."
+    },
+    {
+      "id": "no-loglevel-suppress",
+      "description": "Don't suppress npm output with --loglevel",
+      "type": "banned-flag",
+      "commands": ["npm", "yarn", "pnpm"],
+      "flags": ["--loglevel"],
+      "message": "Do not suppress output with {cmd} --loglevel. Read the full output."
     }
   ],
   "wrappers": ["bash", "sh", "zsh"]

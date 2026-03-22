@@ -142,13 +142,31 @@ check("allow", "npx skills update",      "npx skills update");
 check("block", "npx not-skills",         "npx create-next-app",           "Package runners (npx) are banned. Do not run arbitrary packages.");
 
 // ── Rule: no silent/quiet on test/lint ──
-check("block", "npm test --silent",       "npm test --silent",             "Do not suppress test/lint output with npm --silent/--quiet. Read the full output.");
-check("block", "jest --silent",           "jest --silent",                 "Do not suppress test/lint output with jest --silent/--quiet. Read the full output.");
-check("block", "eslint --quiet",          "eslint src/ --quiet",           "Do not suppress test/lint output with eslint --silent/--quiet. Read the full output.");
-check("block", "vitest --silent",         "vitest run --silent",           "Do not suppress test/lint output with vitest --silent/--quiet. Read the full output.");
-check("block", "pytest --quiet",          "pytest --quiet",                "Do not suppress test/lint output with pytest --silent/--quiet. Read the full output.");
+check("block", "npm test --silent",       "npm test --silent",             "Do not suppress test/lint output with npm --silent/--quiet/--reporter. Read the full output.");
+check("block", "jest --silent",           "jest --silent",                 "Do not suppress test/lint output with jest --silent/--quiet/--reporter. Read the full output.");
+check("block", "eslint --quiet",          "eslint src/ --quiet",           "Do not suppress test/lint output with eslint --silent/--quiet/--reporter. Read the full output.");
+check("block", "vitest --silent",         "vitest run --silent",           "Do not suppress test/lint output with vitest --silent/--quiet/--reporter. Read the full output.");
+check("block", "pytest --quiet",          "pytest --quiet",                "Do not suppress test/lint output with pytest --silent/--quiet/--reporter. Read the full output.");
 check("allow", "npm test normal",         "npm test");
 check("allow", "git log --quiet",         "git log --quiet");
+
+// ── Rule: no /dev/null redirects ──
+check("block", "npm test 2>/dev/null",    "npm test 2>/dev/null",          "Do not redirect output to /dev/null. Read the full output.");
+check("block", "vitest > /dev/null",      "vitest run > /dev/null",        "Do not redirect output to /dev/null. Read the full output.");
+check("block", "jest > /dev/null 2>&1",   "jest --coverage > /dev/null 2>&1", "Do not redirect output to /dev/null. Read the full output.");
+check("block", "eslint 2>&1 >/dev/null",  "eslint src/ 2>&1 > /dev/null",  "Do not redirect output to /dev/null. Read the full output.");
+check("allow", "echo to file",           "echo hello > output.txt");
+check("allow", "npm test > log",         "npm test > test.log");
+
+// ── Rule: no --loglevel suppress ──
+check("block", "npm test loglevel silent", "npm test --loglevel silent",   "Do not suppress output with npm --loglevel. Read the full output.");
+check("block", "npm test loglevel error",  "npm test --loglevel error",    "Do not suppress output with npm --loglevel. Read the full output.");
+check("block", "npm test loglevel=silent", "npm test --loglevel=silent",   "Do not suppress output with npm --loglevel. Read the full output.");
+
+// ── Rule: no --reporter suppress ──
+check("block", "vitest reporter dot",     "vitest run --reporter=dot",     "Do not suppress test/lint output with vitest --silent/--quiet/--reporter. Read the full output.");
+check("block", "mocha reporter dot",      "mocha --reporter dot",          "Do not suppress test/lint output with mocha --silent/--quiet/--reporter. Read the full output.");
+check("block", "jest reporters",          "jest --reporters=default --silent", "Do not suppress test/lint output with jest --silent/--quiet/--reporter. Read the full output.");
 
 // ── Wrapper recursion ──
 check("block", "bash -c grep",            "bash -c 'grep foo bar'",       "grep is banned. Use rg.exe instead.");
