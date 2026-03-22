@@ -23,8 +23,20 @@ function extractFromContext7Resolve(input) {
 }
 
 function extractFromContext7Query(input) {
+  // libraryId formats from real sessions:
+  //   /colinhacks/zod           → "zod"
+  //   /expressjs/express/v5.1.0 → "express" (NOT "v5.1.0")
+  //   /llmstxt/valibot_dev_llms-full_txt → "valibot_dev_llms-full_txt"
+  //   /websites/react_dev       → "react_dev"
+  //
+  // Strategy: use all non-version segments joined, so hasLookup's
+  // reverse containment can match against any of them.
   const libraryId = input.libraryId || "";
-  const library = libraryId.split("/").pop() || libraryId;
+  const segments = libraryId.split("/").filter(Boolean);
+  // Drop version-like segments (start with v + digit, or pure semver)
+  const meaningful = segments.filter(s => !/^v?\d/.test(s));
+  // Use the last meaningful segment, fallback to last segment, fallback to full ID
+  const library = meaningful.pop() || segments.pop() || libraryId;
   return {
     library,
     query: input.query || "",

@@ -14,9 +14,15 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 
+const crypto = require("crypto");
+
 const debugEnabled = process.env.DOCS_GUARD_DEBUG === "1";
+// Per-session log file keyed by CWD — same hash as state file.
+// Multiple sessions get separate logs instead of stomping each other.
+const cwd = process.env.CLAUDE_CWD || process.cwd();
+const cwdHash = crypto.createHash("md5").update(cwd).digest("hex").slice(0, 12);
 const logFilePath = process.env.DOCS_GUARD_LOG
-  || path.join(os.tmpdir(), "docs-guard.log");
+  || path.join(os.tmpdir(), `docs-guard-${cwdHash}.log`);
 // Always log to file. You can't debug a hook that doesn't leave a trace.
 const logToFile = true;
 const maxLogBytes = (parseInt(process.env.DOCS_GUARD_LOG_MAX_KB, 10) || 512) * 1024;
