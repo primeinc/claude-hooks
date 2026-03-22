@@ -2,10 +2,10 @@
   "rules": [
     {
       "id": "no-find",
-      "description": "Use the Glob tool instead",
+      "description": "Use rg.exe instead",
       "type": "banned-command",
       "commands": ["find"],
-      "message": "{cmd} is banned. Use the Glob tool instead."
+      "message": "{cmd} is banned. Use rg.exe instead."
     },
     {
       "id": "no-grep",
