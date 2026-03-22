@@ -135,7 +135,7 @@ claude-hooks/
 **Bash guards:**
 - **Foreign language eval** (`python -c "os.system('find .')"`, `node -e "execSync('grep')"`) cannot be caught without interpreting the target language. Shell `eval` is caught.
 - **Subshell redirect** (`(npm test) 2>/dev/null`) — redirect on the subshell wrapper is not checked.
-- **Heredoc content** is stripped before scanning but herestring (`<<<`) is not stripped.
+- **Heredoc content** is stripped before scanning (data, not commands). **Herestrings** (`bash <<< "find ."`) are evaluated and blocked correctly.
 
 **Plugin cache** does not auto-refresh from source. Bump the version in `plugin.json` and run `claude plugin update` after making changes.
 
