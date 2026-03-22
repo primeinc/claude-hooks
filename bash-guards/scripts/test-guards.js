@@ -318,6 +318,22 @@ checkCwd("block", "pnpm run lint missing config",     "pnpm run lint", badLint);
 checkCwd("allow", "npm test not checked",             "npm test", badLint);
 checkCwd("block", "lint first in chain",              "npm run lint && npm run build", badLint);
 
+// ── tsconfig strict check ──
+const tscNoStrict = mkTmp("tsc-no-strict", { scripts: { build: "tsc" } });
+writeFileSync(path.join(tscNoStrict, "tsconfig.json"), JSON.stringify({ compilerOptions: { target: "es2020" } }));
+
+const tscStrict = mkTmp("tsc-strict", { scripts: { build: "tsc" } });
+writeFileSync(path.join(tscStrict, "tsconfig.json"), JSON.stringify({ compilerOptions: { strict: true, target: "es2020" } }));
+
+const tscNoBuild = mkTmp("tsc-no-build", { scripts: { start: "node dist/index.js" } });
+
+const nonTscBuild = mkTmp("non-tsc-build", { scripts: { build: "vite build" } });
+
+checkCwd("block", "build without strict tsconfig",   "npm run build", tscNoStrict);
+checkCwd("allow", "build with strict tsconfig",      "npm run build", tscStrict);
+checkCwd("allow", "non-tsc build not checked",       "npm run build", nonTscBuild);
+checkCwd("allow", "no build script",                 "npm run start", tscNoBuild);
+
 // Cleanup
 rmSync(TMP, { recursive: true, force: true });
 

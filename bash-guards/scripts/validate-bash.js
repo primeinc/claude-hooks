@@ -413,11 +413,35 @@ function hasEslintConfigProtection(cwd) {
   return false;
 }
 
+function hasTsconfigStrict(cwd) {
+  const names = ["tsconfig.json", "tsconfig.build.json"];
+  let foundAny = false;
+  for (const name of names) {
+    try {
+      const content = readFileSync(join(cwd, name), "utf8");
+      foundAny = true;
+      // Parse JSON (strip comments for jsonc support)
+      const stripped = content.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+      const parsed = JSON.parse(stripped);
+      if (parsed.compilerOptions?.strict === true) return true;
+    } catch { /* not found or parse error */ }
+  }
+  // If no tsconfig found at all, don't block — can't verify
+  if (!foundAny) return true;
+  return false;
+}
+
 const LINT_STANDARDS = {
-  // script name → { scriptRequires, configAlternative }
+  // script name → { scriptFlags, configCheck, configMessage }
   lint: {
     scriptFlags: ["--no-inline-config"],
     configCheck: hasEslintConfigProtection,
+  },
+  build: {
+    scriptFlags: [],
+    configCheck: hasTsconfigStrict,
+    tscOnly: true,
+    configMessage: 'tsconfig.json is missing "strict": true. Add to compilerOptions before building.',
   },
 };
 
@@ -464,9 +488,6 @@ function checkSegmentStandards(seg, cwd) {
   }
   if (!standard) return null;
 
-  // Check config file first — if protection is there, script flag is optional
-  if (standard.configCheck && standard.configCheck(cwd)) return null;
-
   // Read package.json
   let pkg;
   try {
@@ -478,6 +499,20 @@ function checkSegmentStandards(seg, cwd) {
 
   const scriptValue = pkg.scripts?.[scriptName];
   if (!scriptValue) return null; // Script doesn't exist — don't block here
+
+  // For tscOnly standards, only check if the script actually uses tsc
+  if (standard.tscOnly && !scriptValue.includes("tsc")) return null;
+
+  // Check config file first — if protection is there, script flag is optional
+  if (standard.configCheck && standard.configCheck(cwd)) return null;
+
+  // If standard has no scriptFlags, the config check is the only gate
+  if (standard.scriptFlags.length === 0) {
+    return {
+      decision: "block",
+      reason: standard.configMessage || `package.json script "${scriptName}" is missing required config.`,
+    };
+  }
 
   // Check each required flag in the script
   const missing = standard.scriptFlags.filter((p) => !scriptValue.includes(p));
