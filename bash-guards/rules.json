@@ -26,7 +26,9 @@
       "id": "no-test-pipe",
       "description": "Don't pipe test output",
       "type": "banned-pipe-source",
-      "pattern": "test",
+      "test_commands": ["vitest", "jest", "mocha", "pytest", "phpunit", "rspec"],
+      "test_pm": ["npm", "yarn", "pnpm", "bun"],
+      "test_lang": ["cargo", "go", "dotnet", "deno"],
       "message": "Do not pipe test output. Run the test command directly and read the full output."
     },
     {
@@ -58,45 +60,6 @@
       "type": "banned-path-pattern",
       "pattern": "node_modules/.bin/",
       "message": "Running binaries from node_modules/.bin/ directly is banned."
-    },
-    {
-      "id": "no-test-runners",
-      "description": "No direct test runner binaries",
-      "type": "banned-command",
-      "commands": ["vitest", "jest", "mocha", "pytest", "phpunit", "rspec"],
-      "message": "Test runners ({cmd}) are banned. Do not run tests directly."
-    },
-    {
-      "id": "no-lang-test",
-      "description": "No language-native test commands",
-      "type": "banned-subcommand",
-      "commands": ["cargo", "go", "dotnet", "deno"],
-      "subcommands": ["test"],
-      "message": "Test runners ({cmd} {sub}) are banned. Do not run tests directly."
-    },
-    {
-      "id": "no-node-test",
-      "description": "No node --test",
-      "type": "banned-flag",
-      "commands": ["node"],
-      "flags": ["--test"],
-      "message": "Test runners (node --test) are banned. Do not run tests directly."
-    },
-    {
-      "id": "no-pm-test",
-      "description": "No PM test subcommands",
-      "type": "banned-subcommand",
-      "commands": ["npm", "yarn", "pnpm", "bun"],
-      "subcommands": ["test"],
-      "message": "Test runners ({cmd} {sub}) are banned. Do not run tests directly."
-    },
-    {
-      "id": "no-pm-run-test",
-      "description": "No PM run test",
-      "type": "banned-subcommand-chain",
-      "commands": ["npm", "yarn", "pnpm", "bun"],
-      "chain": ["run", "test"],
-      "message": "Test runners ({cmd} run test) are banned. Do not run tests directly."
     }
   ],
   "wrappers": ["bash", "sh", "zsh"]

@@ -9,7 +9,19 @@ const SCRIPT = path.join(__dirname, "validate-bash.js");
 let pass = 0;
 let fail = 0;
 
-function check(expect, label, cmd) {
+function parseOutput(stdout) {
+  if (!stdout.trim()) return null;
+  try {
+    const parsed = JSON.parse(stdout);
+    const out = parsed?.hookSpecificOutput;
+    if (out?.permissionDecision === "deny") {
+      return { blocked: true, reason: out.permissionDecisionReason || "" };
+    }
+  } catch {}
+  return null;
+}
+
+function check(expect, label, cmd, exactReason) {
   const input = JSON.stringify({ tool_input: { command: cmd } });
   let stdout = "";
   try {
@@ -19,86 +31,110 @@ function check(expect, label, cmd) {
       shell: true,
     }).toString();
   } catch (e) {
-    // non-zero exit = unexpected error
     stdout = "";
   }
 
-  const blocked = stdout.includes('"permissionDecision":"deny"');
-  const ok = (expect === "block" && blocked) || (expect === "allow" && !blocked);
+  const result = parseOutput(stdout);
+  const blocked = result !== null;
+  const reason = result?.reason || "";
 
-  if (ok) {
-    pass++;
-  } else {
+  if (expect === "block" && !blocked) {
     fail++;
-    console.log(`FAIL: ${label} (expected=${expect}, got exit=${exitCode})`);
+    console.log(`FAIL: ${label} (expected=block, got=allow)`);
     console.log(`      cmd: ${cmd}`);
+    return;
   }
+  if (expect === "allow" && blocked) {
+    fail++;
+    console.log(`FAIL: ${label} (expected=allow, got=block reason="${reason}")`);
+    console.log(`      cmd: ${cmd}`);
+    return;
+  }
+
+  if (expect === "block" && exactReason && reason !== exactReason) {
+    fail++;
+    console.log(`FAIL: ${label} (reason mismatch)`);
+    console.log(`      expected: "${exactReason}"`);
+    console.log(`      got:      "${reason}"`);
+    return;
+  }
+
+  pass++;
 }
 
 // ── Rule 1: find ──
-check("block", "find at start",            "find . -name foo");
-check("block", "find after semicolon",     "cd /tmp; find . -type f");
-check("block", "find after &&",            "cd /tmp && find . -name f");
-check("block", "find in subshell",         "(find . -name bar)");
+check("block", "find at start",            "find . -name foo",             "find is banned. Use rg.exe instead.");
+check("block", "find after semicolon",     "cd /tmp; find . -type f",      "find is banned. Use rg.exe instead.");
+check("block", "find after &&",            "cd /tmp && find . -name f",    "find is banned. Use rg.exe instead.");
+check("block", "find in subshell",         "(find . -name bar)",           "find is banned. Use rg.exe instead.");
 
 // ── Rule 2: grep ──
-check("block", "grep at start",            "grep -r foo src/");
-check("block", "grep after pipe",          "ls | grep foo");
-check("block", "grep after semicolon",     "cd src; grep -l bar *.ts");
-check("block", "grep after &&",            "cd src && grep -rn baz .");
-check("block", "egrep",                    "egrep 'pattern' file.txt");
-check("block", "fgrep",                    "fgrep 'literal' file.txt");
+check("block", "grep at start",            "grep -r foo src/",             "grep is banned. Use rg.exe instead.");
+check("block", "grep after pipe",          "ls | grep foo",                "grep is banned. Use rg.exe instead.");
+check("block", "grep after semicolon",     "cd src; grep -l bar *.ts",     "grep is banned. Use rg.exe instead.");
+check("block", "grep after &&",            "cd src && grep -rn baz .",     "grep is banned. Use rg.exe instead.");
+check("block", "egrep",                    "egrep 'pattern' file.txt",     "egrep is banned. Use rg.exe instead.");
+check("block", "fgrep",                    "fgrep 'literal' file.txt",     "fgrep is banned. Use rg.exe instead.");
 check("allow", "rg.exe exemption",         "rg.exe --files | rg.exe foo");
-check("allow", 'grep in string arg',       'echo "grep is cool"');
+check("allow", "grep in string arg",       'echo "grep is cool"');
 
 // ── Rule 3: truncation ──
-check("block", "pipe to tail",             "eslint src/ | tail -5");
-check("block", "pipe to head",             "cat foo.txt | head -20");
-check("block", "pipe to less",             "git log | less");
-check("block", "pipe to more",             "git diff | more");
-check("block", "pipe to tail after &&",    "cd src && eslint . | tail -5");
+check("block", "pipe to tail",             "eslint src/ | tail -5",        "Do not truncate output with tail. Read the full output directly.");
+check("block", "pipe to head",             "cat foo.txt | head -20",       "Do not truncate output with head. Read the full output directly.");
+check("block", "pipe to less",             "git log | less",               "Do not truncate output with less. Read the full output directly.");
+check("block", "pipe to more",             "git diff | more",              "Do not truncate output with more. Read the full output directly.");
+check("block", "pipe to tail after &&",    "cd src && eslint . | tail -5", "Do not truncate output with tail. Read the full output directly.");
 check("allow", "tail as first command",    "tail -f /var/log/syslog");
 
-// ── Rule 4: piping test output ──
-check("block", "npm test piped",           "npm test | cat");
-check("block", "pytest piped",             "pytest | cat");
+// ── Rule 4: piping test output (hiding results) ──
+check("block", "npm test piped",           "npm test | cat",               "Do not pipe test output. Run the test command directly and read the full output.");
+check("block", "pytest piped",             "pytest | cat",                 "Do not pipe test output. Run the test command directly and read the full output.");
+check("block", "npm test piped to rg",     "npm test | rg.exe PASS",      "Do not pipe test output. Run the test command directly and read the full output.");
+check("block", "npm run test piped",       "npm run test | cat",           "Do not pipe test output. Run the test command directly and read the full output.");
+check("block", "vitest piped",             "vitest | cat",                 "Do not pipe test output. Run the test command directly and read the full output.");
+check("block", "jest piped",               "jest --coverage | cat",        "Do not pipe test output. Run the test command directly and read the full output.");
+check("block", "cargo test piped",         "cargo test | cat",             "Do not pipe test output. Run the test command directly and read the full output.");
+check("block", "go test piped",            "go test ./... | cat",          "Do not pipe test output. Run the test command directly and read the full output.");
+check("block", "node --test piped",        "node --test | cat",            "Do not pipe test output. Run the test command directly and read the full output.");
+check("allow", "echo test piped",          "echo test | cat");
+check("allow", "node script with test in name piped", "node test-guards.js | cat");
+
+// ── Rule 4 does NOT ban running tests ──
+check("allow", "npm test",                 "npm test");
+check("allow", "npm run test",             "npm run test");
+check("allow", "vitest",                   "vitest run");
+check("allow", "jest",                     "jest --coverage");
+check("allow", "mocha",                    "mocha test/");
+check("allow", "pytest",                   "pytest -v");
+check("allow", "phpunit",                  "phpunit tests/");
+check("allow", "rspec",                    "rspec spec/");
+check("allow", "cargo test",              "cargo test");
+check("allow", "go test",                 "go test ./...");
+check("allow", "dotnet test",             "dotnet test");
+check("allow", "deno test",               "deno test");
+check("allow", "node --test",             "node --test");
+check("allow", "yarn test",               "yarn test");
+check("allow", "pnpm test",               "pnpm test");
+check("allow", "bun test",                "bun test");
+check("allow", "bun run test",            "bun run test");
 
 // ── Rule 5: package runners ──
-check("block", "npx",                      "npx eslint src/");
-check("block", "bunx",                     "bunx vitest");
-check("block", "pnpx",                     "pnpx tsc");
-check("block", "yarn dlx",                 "yarn dlx create-next-app");
-check("block", "pnpm dlx",                 "pnpm dlx degit");
-check("block", "npm exec",                 "npm exec -- eslint .");
-check("block", "yarn exec",                "yarn exec tsc");
-check("block", "pnpm exec",               "pnpm exec jest");
-check("block", "node_modules bin",         "node_modules/.bin/eslint src/");
-check("block", "node_modules bin ./",      "./node_modules/.bin/jest");
-check("block", "npx after &&",            "cd project && npx eslint .");
-
-// ── Rule 6: test runners ──
-check("block", "vitest",                   "vitest run");
-check("block", "jest",                     "jest --coverage");
-check("block", "mocha",                    "mocha test/");
-check("block", "pytest",                   "pytest -v");
-check("block", "phpunit",                  "phpunit tests/");
-check("block", "rspec",                    "rspec spec/");
-check("block", "cargo test",              "cargo test");
-check("block", "go test",                 "go test ./...");
-check("block", "dotnet test",             "dotnet test");
-check("block", "deno test",               "deno test");
-check("block", "node --test",             "node --test");
-check("block", "npm test",                "npm test");
-check("block", "npm run test",            "npm run test");
-check("block", "yarn test",               "yarn test");
-check("block", "pnpm test",               "pnpm test");
-check("block", "bun test",                "bun test");
-check("block", "bun run test",            "bun run test");
+check("block", "npx",                      "npx eslint src/",              "Package runners (npx) are banned. Do not run arbitrary packages.");
+check("block", "bunx",                     "bunx vitest",                  "Package runners (bunx) are banned. Do not run arbitrary packages.");
+check("block", "pnpx",                     "pnpx tsc",                    "Package runners (pnpx) are banned. Do not run arbitrary packages.");
+check("block", "yarn dlx",                 "yarn dlx create-next-app",     "Package runners (yarn dlx) are banned. Do not run arbitrary packages.");
+check("block", "pnpm dlx",                 "pnpm dlx degit",              "Package runners (pnpm dlx) are banned. Do not run arbitrary packages.");
+check("block", "npm exec",                 "npm exec -- eslint .",         "Package runners (npm exec) are banned. Do not run arbitrary packages.");
+check("block", "yarn exec",                "yarn exec tsc",               "Package runners (yarn exec) are banned. Do not run arbitrary packages.");
+check("block", "pnpm exec",               "pnpm exec jest",               "Package runners (pnpm exec) are banned. Do not run arbitrary packages.");
+check("block", "node_modules bin",         "node_modules/.bin/eslint src/","Running binaries from node_modules/.bin/ directly is banned.");
+check("block", "node_modules bin ./",      "./node_modules/.bin/jest",     "Running binaries from node_modules/.bin/ directly is banned.");
+check("block", "npx after &&",            "cd project && npx eslint .",    "Package runners (npx) are banned. Do not run arbitrary packages.");
 
 // ── Wrapper recursion ──
-check("block", "bash -c grep",            "bash -c 'grep foo bar'");
-check("block", "sh -c find",              "sh -c 'find . -name x'");
-check("block", "bash -lc npx",            "bash -lc 'npx eslint'");
+check("block", "bash -c grep",            "bash -c 'grep foo bar'",       "grep is banned. Use rg.exe instead.");
+check("block", "sh -c find",              "sh -c 'find . -name x'",       "find is banned. Use rg.exe instead.");
+check("block", "bash -lc npx",            "bash -lc 'npx eslint'",        "Package runners (npx) are banned. Do not run arbitrary packages.");
 
 // ── Should ALLOW ──
 check("allow", "git status",              "git status");

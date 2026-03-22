@@ -58,7 +58,7 @@ function tokenize(input) {
 
     // Single-char operators and structure
     if ("|;&()".includes(ch)) {
-      tokens.push({ type: ch === "|" ? "op" : ch === "(" || ch === ")" ? "op" : "op", value: ch });
+      tokens.push({ type: "op", value: ch });
       i++; continue;
     }
     if (ch === ">" || ch === "<") {
@@ -179,9 +179,17 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
 
     case "banned-pipe-source":
       if (segIdx !== 0 || pipeline.segments.length <= 1) return null;
-      if (cmd === rule.pattern || args.some((a) => a === rule.pattern) || args.join(" ").includes(rule.pattern)) {
-        return rule.message;
-      }
+      // Only fire when the piped command is actually a test runner:
+      // - direct runners: pytest, vitest, jest, mocha, phpunit, rspec
+      // - PM test: npm/yarn/pnpm/bun test
+      // - PM run test: npm/yarn/pnpm/bun run test
+      // - lang test: cargo/go/dotnet/deno test
+      // - node --test
+      if (rule.test_commands && rule.test_commands.includes(cmd)) return rule.message;
+      if (rule.test_pm && rule.test_pm.includes(cmd) && args[0] === "test") return rule.message;
+      if (rule.test_pm && rule.test_pm.includes(cmd) && args[0] === "run" && args[1] === "test") return rule.message;
+      if (rule.test_lang && rule.test_lang.includes(cmd) && args[0] === "test") return rule.message;
+      if (cmd === "node" && args.includes("--test")) return rule.message;
       return null;
 
     case "banned-subcommand":

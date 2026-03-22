@@ -19,13 +19,12 @@ Does **not** block messages. Returns `continue: true` with a `systemMessage` tha
 
 | Rule | Blocked | Alternative |
 |------|---------|-------------|
-| `find` | `find . -name foo` | Glob tool |
-| `grep` | `grep -r pattern .` | Grep tool |
+| `find` | `find . -name foo` | rg.exe |
+| `grep` | `grep -r pattern .` | rg.exe |
 | Truncation | `cmd \| head`, `cmd \| tail`, `cmd \| less`, `cmd \| more` | Read full output |
-| Test pipe | `npm test \| cat` | Run tests directly |
+| Test pipe | `npm test \| cat`, `pytest \| grep PASS` | Don't hide test results |
 | Package runners | `npx`, `bunx`, `pnpx`, `yarn dlx`, `pnpm dlx`, `npm exec` | Don't run arbitrary packages |
 | node_modules bin | `node_modules/.bin/eslint` | Don't run binaries directly |
-| Test runners | `vitest`, `jest`, `mocha`, `pytest`, `npm test`, etc. | Don't run tests directly |
 
 Rules are defined in `bash-guards/rules.json`. The engine parses commands into tokens and AST nodes, then applies policy against actual command structure — not regex substrings. Handles quotes, subshells, command substitution, and wrapper recursion (`bash -c`, `sh -lc`).
 
@@ -52,10 +51,10 @@ Then install the plugin:
 claude plugin install claude-hooks@local-hooks
 ```
 
-To update after changes, bump the version in `marketplace.json` and run:
+To update after changes, commit your changes, then run:
 
 ```
-claude plugin update claude-hooks
+claude plugin update claude-hooks@local-hooks
 ```
 
 ## Development
@@ -72,19 +71,13 @@ Without `--plugin-dir`, the plugin is cached at `~/.claude/plugins/cache/` at in
 
 ## Testing
 
-Run all tests:
+Run bash guard tests:
 
 ```bash
 npm test
 ```
 
-Run bash guard tests only (63 cases):
-
-```bash
-npm run test:guards
-```
-
-Run frustration detector benchmarks:
+Run frustration detector benchmarks (requires `claude` CLI):
 
 ```bash
 npm run benchmark
