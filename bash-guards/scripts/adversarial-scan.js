@@ -58,20 +58,32 @@ for (const [cmd, expect, desc] of guardCases) {
 }
 
 const frusCases = [
+  // Casual — should NOT trigger
   ["oh shit I forgot", null, "casual"],
   ["how can you work around all that shit", null, "filler"],
   ["kick ass implementation", null, "compliment"],
   ["damn that was fast", null, "positive"],
   ["can you fix the shit in the build", null, "question"],
   ["damn that config is crappy", null, "casual pair"],
+  ["pain in the ass to configure", null, "idiom"],
+  ["GET THE DOCS", null, "caps instruction 3 words"],
+  ["STOP CONDITION NOT MET", null, "caps instruction 4 words"],
+  ["fix the API endpoint", null, "clean instruction"],
+  // Directed — should trigger HIGH
   ["your code is shit", "HIGH", "directed"],
   ["you fucking broke it", "HIGH", "you+fuck"],
   ["WHAT THE FUCK IS WRONG WITH YOU", "HIGH", "caps rage"],
   ["this is bullshit", "HIGH", "exclamatory"],
   ["holy shit you broke everything", "HIGH", "holy shit"],
+  ["STOP BLOCKING MY COMMANDS YOU ABSOLUTE WASTE", "HIGH", "caps rage 7 words"],
+  ["you are so full of shit", "HIGH", "you are + shit"],
+  ["CHECK THE FUCKING GIT LOGS YOU FUCK", "HIGH", "angry instruction"],
+  // Other categories
   ["same error again", "CIRCULAR_RETRY", "circular"],
+  ["this doesnt work", "CIRCULAR_RETRY", "doesnt work"],
   ["not what I asked for", "SCOPE_DRIFT", "scope"],
   ["wrong file check the docs", "MILD", "mild"],
+  ["your wrong get the docs", "MILD", "your wrong"],
 ];
 
 let fOk = 0, fFail = 0;
