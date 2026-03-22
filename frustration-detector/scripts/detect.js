@@ -68,7 +68,7 @@ const RULES = [
 
   // HIGH: exclamatory profanity — "what the fuck", "holy shit", "that's bullshit", "that shit"
   {
-    pattern: /(what the|holy|oh my|are you|how the)\s+\w*(fuck|shit|crap|damn|hell)|\b(this is|that's|that is) (fuck|shit|crap|bull\s*shit)|\bthat (shit|fuck|crap)\b.{0,10}(doesn|doesn|doesnt|won|isn|not|never|broken|wrong|fail)|\b(bull\s*shit|bullshit|cunt)\b/i,
+    pattern: /(what the|holy|oh my|are you|how the)\s+\w*(fuck|shit|crap|damn|hell)|\b(this is|that's|that is) (fuck|shit|crap|bull\s*shit)|\bthat (shit|fuck|crap)\b.{0,10}(doesn|doesnt|won|isn|not|never|broken|wrong|fail)|\b(bull\s*shit|bullshit|cunt)\b/i,
     category: "HIGH",
   },
 
