@@ -310,6 +310,8 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
 }
 
 function evaluate(rawCommand) {
+  // Strip heredoc content — heredoc bodies are data, not commands
+  rawCommand = rawCommand.replace(/<<-?\s*['"]?(\w+)['"]?\s*\n[\s\S]*?\n\s*\1\b/g, "");
   const tokens = tokenize(rawCommand);
   const pipelines = buildAST(tokens);
   const wrappers = new Set(CONFIG.wrappers || []);

@@ -240,6 +240,10 @@ check("block", "proc sub find",          "diff <(find . -name '*.ts') list.txt",
 check("block", "proc sub grep",          "diff <(grep foo a.txt) <(grep foo b.txt)", msg("no-grep", {cmd:"grep"}));
 check("allow", "proc sub safe",          "diff <(cat a.txt) <(cat b.txt)");
 
+// ── Heredoc content not scanned ──
+check("allow", "heredoc with banned word", "git commit -m \"$(cat <<'EOF'\nfind in node_modules/eslint is fine\nEOF\n)\"");
+check("block", "actual find not in heredoc", "find . -name foo");
+
 // ── Should ALLOW ──
 check("allow", "git status",              "git status");
 check("allow", "npm run lint",            "npm run lint");
