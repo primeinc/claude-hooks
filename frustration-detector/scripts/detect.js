@@ -49,12 +49,35 @@ const MESSAGES = {
 // maxLength constrains the rule to short messages only (reduces false positives).
 
 const RULES = [
-  // HIGH: profanity (any word form)
-  // No trailing \b on longer stems so "fucking", "shitty", "crappy", "damned" all match.
-  // \bass\b keeps trailing boundary to avoid "assign", "assert", "class".
-  // Common typos: "fukc", "fuk", "fcuk", "sht" from rage-typing.
+  // HIGH: directed profanity — aimed at Claude or Claude's output
+  // No trailing \b on profanity stems so inflected forms (fucking, shitty) match.
+  // Direction markers: you/your/you're, this/that, what the, holy
   {
-    pattern: /\b(fuck|fukc|fuk|fcuk|shit|sht|bullshit|bull\s*shit|damn|crap|cunt)|\bass\b/i,
+    pattern: /\b(your|you're)\b.{0,40}\b(fuck|shit|crap|damn|cunt|ass\b)|\b(fuck|shit|crap|damn|cunt)\w*.{0,20}\b(you|your|you're)\b|\byou\b.{0,10}\b(fuck|shit|crap|damn|cunt|ass\b)/i,
+    category: "HIGH",
+  },
+
+  // HIGH: exclamatory profanity — "what the fuck", "holy shit", "that's bullshit", "that shit"
+  {
+    pattern: /(what the|holy|oh my|are you)\s+\w*(fuck|shit|crap|damn|hell)|\b(this is|that's|that is) (fuck|shit|crap|bull\s*shit|damn|garbage)|\bthat (shit|fuck|crap)\b.{0,10}(doesn|doesn|doesnt|won|isn|not|never|broken|wrong|fail)|\b(bull\s*shit|bullshit|cunt)\b/i,
+    category: "HIGH",
+  },
+
+  // HIGH: multiple profanity words in one message = rage regardless of direction
+  {
+    pattern: /\b(fuck|shit|damn|crap|cunt)\w*\b.+\b(fuck|shit|damn|crap|cunt)\w*\b/i,
+    category: "HIGH",
+  },
+
+  // HIGH: profanity in ALL CAPS context (rage regardless of direction)
+  {
+    pattern: /[A-Z]{3,}.{0,20}\b(FUCK|SHIT|DAMN|CRAP|CUNT|ASS)\b|\b(FUCK|SHIT|DAMN|CRAP|CUNT)\w*.{0,20}[A-Z]{3,}/,
+    category: "HIGH",
+  },
+
+  // HIGH: profanity typos from rage-typing (nobody rage-types calmly)
+  {
+    pattern: /\b(fukc|fuk|fcuk|sht)\b/i,
     category: "HIGH",
   },
 

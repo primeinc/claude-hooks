@@ -88,5 +88,14 @@
   {"id":"edge-13","input":"the new bull skill is bullshit lets do it correctly with valid best practices from all first party docs","expected_class":"HIGH","source":"session-bc2f3357","notes":"Real session — 'bullshit' in constructive message still triggers HIGH"},
   {"id":"edge-14","input":"and why not bullshit?","expected_class":"HIGH","source":"session-bc2f3357","notes":"Real session — profanity in a question context"},
 
-  {"id":"scope-04","input":"not what I asked for - I said update the login form validation, you changed the entire form component and broke the CSS layout","expected_class":"SCOPE_DRIFT","source":"synthetic","notes":"Long scope drift at 128 chars — must not be cut off by maxLength"}
+  {"id":"scope-04","input":"not what I asked for - I said update the login form validation, you changed the entire form component and broke the CSS layout","expected_class":"SCOPE_DRIFT","source":"synthetic","notes":"Long scope drift at 128 chars — must not be cut off by maxLength"},
+
+  {"id":"casual-01","input":"oh shit I forgot to save","expected_class":"NONE","source":"synthetic","notes":"Self-directed profanity, not at Claude"},
+  {"id":"casual-02","input":"how can you work around all that shit","expected_class":"NONE","source":"session-122db08f","notes":"Real session — casual 'shit' as filler"},
+  {"id":"casual-03","input":"lol so much hardcoded shit i cant believe your trying to pass that","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — directed at Claude's output via 'your'"},
+  {"id":"casual-04","input":"this damn config file has a typo","expected_class":"NONE","source":"synthetic","notes":"Frustration at config, not Claude"},
+  {"id":"casual-05","input":"I need to fix this crappy CSS","expected_class":"NONE","source":"synthetic","notes":"Self-directed work statement"},
+  {"id":"casual-06","input":"kick ass implementation","expected_class":"NONE","source":"synthetic","notes":"Compliment with ass — false positive trap"},
+  {"id":"casual-07","input":"and shit too be thorough","expected_class":"NONE","source":"session-122db08f","notes":"Filler profanity"},
+  {"id":"casual-08","input":"YOUR SHIT DOESNT WORK STILL WHY","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — directed at Claude via YOUR + SHIT + caps"}
 ]
