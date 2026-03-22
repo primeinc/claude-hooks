@@ -68,7 +68,7 @@ if (runs.length >= 2) {
     const lCat = latest.by_category?.[cat];
     if (fCat && lCat) {
       const delta = lCat.accuracy_pct - fCat.accuracy_pct;
-      const arrow = delta > 0 ? "+" : delta < 0 ? "" : "=";
+      const arrow = delta > 0 ? "+" : delta === 0 ? "=" : "";
       console.log(
         `  ${cat.padEnd(18)} ${fCat.accuracy_pct}% → ${lCat.accuracy_pct}% (${arrow}${delta}%)`
       );

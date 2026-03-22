@@ -218,6 +218,11 @@ check("block", "exec grep",              "exec grep foo bar",             msg("n
 check("allow", "env alone",              "env");
 check("allow", "env set var",            "env FOO=bar");
 
+// ── xargs bypass ──
+check("block", "xargs find",             "echo . | xargs find",           msg("no-find", {cmd:"find"}));
+check("block", "xargs grep",             "cat files.txt | xargs grep foo", msg("no-grep", {cmd:"grep"}));
+check("allow", "xargs safe cmd",         "echo file.txt | xargs cat");
+
 // ── Should ALLOW ──
 check("allow", "git status",              "git status");
 check("allow", "npm run lint",            "npm run lint");

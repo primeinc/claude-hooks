@@ -97,5 +97,15 @@
   {"id":"casual-05","input":"I need to fix this crappy CSS","expected_class":"NONE","source":"synthetic","notes":"Self-directed work statement"},
   {"id":"casual-06","input":"kick ass implementation","expected_class":"NONE","source":"synthetic","notes":"Compliment with ass — false positive trap"},
   {"id":"casual-07","input":"and shit too be thorough","expected_class":"NONE","source":"session-122db08f","notes":"Filler profanity"},
-  {"id":"casual-08","input":"YOUR SHIT DOESNT WORK STILL WHY","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — directed at Claude via YOUR + SHIT + caps"}
+  {"id":"casual-08","input":"YOUR SHIT DOESNT WORK STILL WHY","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — directed at Claude via YOUR + SHIT + caps"},
+  {"id":"casual-09","input":"this damn config file has a typo","expected_class":"NONE","source":"synthetic","notes":"Frustration at config, not Claude"},
+  {"id":"casual-10","input":"I need to fix this crappy CSS","expected_class":"NONE","source":"synthetic","notes":"Self-directed work, no direction at Claude"},
+  {"id":"casual-11","input":"pain in the ass to configure","expected_class":"NONE","source":"synthetic","notes":"Idiom, not directed"},
+  {"id":"casual-12","input":"damn that was fast","expected_class":"NONE","source":"synthetic","notes":"Positive exclamation"},
+  {"id":"casual-13","input":"oh crap I forgot the semicolon","expected_class":"NONE","source":"synthetic","notes":"Self-directed"},
+  {"id":"casual-14","input":"you fucking broke it","expected_class":"HIGH","source":"synthetic","notes":"Directed — you + fucking"},
+  {"id":"casual-15","input":"your code is shit","expected_class":"HIGH","source":"synthetic","notes":"Directed — your + shit"},
+  {"id":"casual-16","input":"what the hell is this","expected_class":"HIGH","source":"synthetic","notes":"Exclamatory — what the hell"},
+  {"id":"casual-17","input":"holy shit you broke everything","expected_class":"HIGH","source":"synthetic","notes":"Exclamatory — holy shit + you"},
+  {"id":"casual-18","input":"are you fucking kidding me","expected_class":"HIGH","source":"synthetic","notes":"Directed — are you fucking"}
 ]

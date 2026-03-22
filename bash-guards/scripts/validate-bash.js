@@ -334,10 +334,24 @@ function evaluate(rawCommand) {
 
       // env/exec prefix — just strips itself and runs the rest
       if (exe === "env" || exe === "exec") {
-        // Skip env flags (env -i, env VAR=val), find the actual command
         let cmdStart = 0;
         for (let ai = 0; ai < args.length; ai++) {
           if (args[ai].startsWith("-") || /^[A-Za-z_][A-Za-z0-9_]*=/.test(args[ai])) continue;
+          cmdStart = ai;
+          break;
+        }
+        if (args[cmdStart]) {
+          const result = evaluate(args.slice(cmdStart).join(" "));
+          if (result) return result;
+        }
+      }
+
+      // xargs runs its arguments as a command
+      if (exe === "xargs" && args.length > 0) {
+        // Skip xargs flags, find the command
+        let cmdStart = 0;
+        for (let ai = 0; ai < args.length; ai++) {
+          if (args[ai].startsWith("-")) { if (/^-[nIidlsP]$/.test(args[ai])) ai++; continue; }
           cmdStart = ai;
           break;
         }
