@@ -107,5 +107,10 @@
   {"id":"casual-15","input":"your code is shit","expected_class":"HIGH","source":"synthetic","notes":"Directed — your + shit"},
   {"id":"casual-16","input":"what the hell is this","expected_class":"HIGH","source":"synthetic","notes":"Exclamatory — what the hell"},
   {"id":"casual-17","input":"holy shit you broke everything","expected_class":"HIGH","source":"synthetic","notes":"Exclamatory — holy shit + you"},
-  {"id":"casual-18","input":"are you fucking kidding me","expected_class":"HIGH","source":"synthetic","notes":"Directed — are you fucking"}
+  {"id":"casual-18","input":"are you fucking kidding me","expected_class":"HIGH","source":"synthetic","notes":"Directed — are you fucking"},
+
+  {"id":"circular-05","input":"we still making things up?","expected_class":"CIRCULAR_RETRY","source":"session-mined","notes":"Real session — 'still making things up'"},
+  {"id":"circular-06","input":"why do u keep gailingthe same way?","expected_class":"CIRCULAR_RETRY","source":"session-mined","notes":"Real session — 'keep [doing] same way' with typo"},
+  {"id":"mild-06","input":"your wrong get the docs","expected_class":"MILD","source":"session-mined","notes":"Real session — 'your wrong' correction"},
+  {"id":"mild-07","input":"then your oracle was prompted wrong","expected_class":"NONE","source":"session-mined","notes":"Real session — correction but no matching MILD pattern, too specific to add"}
 ]

@@ -112,7 +112,7 @@ const RULES = [
 
   // CIRCULAR RETRY: persistence signals
   {
-    pattern: /\b(still (broken|failing|not working|wrong)|keeps (failing|breaking|happening))\b/i,
+    pattern: /\b(still (broken|failing|not working|wrong|guessing|making things up)|keeps? (failing|breaking|happening)|keep .{0,15}(same|failing|wrong))\b/i,
     category: "CIRCULAR_RETRY",
   },
 
@@ -138,7 +138,7 @@ const RULES = [
 
   // MILD: polite corrections (short messages only)
   {
-    pattern: /\b(sorry I was.?t clear|is that (really )?best practice|are you sure|that.?s not (right|correct)|wrong file|check the docs|doesn.?t work on|you misunderstood)\b/i,
+    pattern: /\b(sorry I was.?t clear|is that (really )?best practice|are you sure|that.?s not (right|correct)|wrong file|check the docs|doesn.?t work on|you misunderstood|your wrong|you're wrong)\b/i,
     category: "MILD",
     maxLength: 200,
   },
