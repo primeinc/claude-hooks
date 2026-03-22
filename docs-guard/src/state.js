@@ -70,14 +70,47 @@ function recordLookup(library, query, source) {
  * @param {string} library - npm package name to check
  * @returns {{ found: boolean, lookups: Array }}
  */
+/**
+ * Generate all name variants for matching.
+ * Scoped packages like @vitejs/plugin-react need multiple forms:
+ *   "@vitejs/plugin-react" → ["@vitejs/plugin-react", "vitejs/plugin-react", "vitejs-plugin-react", "plugin-react"]
+ * Plain packages return as-is.
+ */
+function nameVariants(name) {
+  const variants = [name];
+  if (name.startsWith("@")) {
+    const stripped = name.slice(1); // "vitejs/plugin-react"
+    variants.push(stripped);
+    variants.push(stripped.replace("/", "-")); // "vitejs-plugin-react"
+    const afterSlash = stripped.split("/")[1]; // "plugin-react"
+    if (afterSlash) variants.push(afterSlash);
+  }
+  return variants;
+}
+
 function hasLookup(library) {
   const state = readState();
   const lib = library.toLowerCase();
+  const libVariants = nameVariants(lib);
+
   const matches = state.lookups.filter(l => {
     if (l.library === lib) return true;
-    if (lib.length > 1 && l.query.includes(lib)) return true;
-    if (l.library.length > 1 && lib.includes(l.library)) return true;
-    if (lib.length > 1 && l.library.includes(lib)) return true;
+
+    // Generate variants for both sides
+    const lookupVariants = nameVariants(l.library);
+
+    // Cross-check all npm variants against all lookup variants
+    for (const nv of libVariants) {
+      if (nv.length <= 1) continue;
+      for (const lv of lookupVariants) {
+        if (lv.length <= 1) continue;
+        if (nv === lv) return true;
+        if (nv.includes(lv)) return true;
+        if (lv.includes(nv)) return true;
+      }
+      // Also check query text
+      if (l.query.includes(nv)) return true;
+    }
     return false;
   });
   return { found: matches.length > 0, lookups: matches };
