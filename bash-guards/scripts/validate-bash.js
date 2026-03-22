@@ -169,14 +169,16 @@ function parseSegment(segment) {
 // ── Test command detection ───────────────────────────────────────────
 
 const TEST_COMMANDS = ["vitest", "jest", "mocha", "pytest", "phpunit", "rspec"];
+const LINT_COMMANDS = ["eslint", "prettier", "tsc", "biome", "oxlint"];
 const TEST_PM = ["npm", "yarn", "pnpm", "bun"];
 const TEST_LANG = ["cargo", "go", "dotnet", "deno"];
 
 function isTestCommand(cmd, args) {
   if (TEST_COMMANDS.includes(cmd)) return true;
+  if (LINT_COMMANDS.includes(cmd)) return true;
   if (TEST_PM.includes(cmd) && args[0] === "test") return true;
-  if (TEST_PM.includes(cmd) && args[0] === "run" && /^test(:|$)/.test(args[1] || "")) return true;
-  if (TEST_PM.includes(cmd) && /^test(:|$)/.test(args[0] || "")) return true;
+  if (TEST_PM.includes(cmd) && args[0] === "run" && /^(test|lint)(:|$)/.test(args[1] || "")) return true;
+  if (TEST_PM.includes(cmd) && /^(test|lint)(:|$)/.test(args[0] || "")) return true;
   if (TEST_LANG.includes(cmd) && args[0] === "test") return true;
   if (cmd === "node" && args.includes("--test")) return true;
   return false;
@@ -223,8 +225,21 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
       return formatMsg(rule.message, { cmd });
 
     case "banned-flag":
-      if (!rule.commands.includes(cmd)) return null;
+      if (rule.commands && !rule.commands.includes(cmd)) return null;
+      if (rule.test_only && !isTestCommand(cmd, args)) return null;
       if (!rule.flags.some((f) => args.some((a) => a === f || a.startsWith(f + "=")))) return null;
+      // For --reporter, allow verbose/full reporters
+      if (rule.allow_values) {
+        const flagHit = rule.flags.find((f) => args.some((a) => a === f || a.startsWith(f + "=")));
+        if (flagHit) {
+          const flagArg = args.find((a) => a === flagHit || a.startsWith(flagHit + "="));
+          const flagIdx = args.indexOf(flagArg);
+          let val = "";
+          if (flagArg.includes("=")) val = flagArg.split("=")[1];
+          else if (flagIdx + 1 < args.length) val = args[flagIdx + 1];
+          if (rule.allow_values.some((av) => val === av)) return null;
+        }
+      }
       return formatMsg(rule.message, { cmd });
 
     case "banned-path-pattern": {
