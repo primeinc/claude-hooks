@@ -166,6 +166,24 @@ function parseSegment(segment) {
 
 // ── Policy engine ────────────────────────────────────────────────────
 
+// ── Test command detection ───────────────────────────────────────────
+
+const TEST_COMMANDS = ["vitest", "jest", "mocha", "pytest", "phpunit", "rspec"];
+const TEST_PM = ["npm", "yarn", "pnpm", "bun"];
+const TEST_LANG = ["cargo", "go", "dotnet", "deno"];
+
+function isTestCommand(cmd, args) {
+  if (TEST_COMMANDS.includes(cmd)) return true;
+  if (TEST_PM.includes(cmd) && args[0] === "test") return true;
+  if (TEST_PM.includes(cmd) && args[0] === "run" && /^test(:|$)/.test(args[1] || "")) return true;
+  if (TEST_PM.includes(cmd) && /^test(:|$)/.test(args[0] || "")) return true;
+  if (TEST_LANG.includes(cmd) && args[0] === "test") return true;
+  if (cmd === "node" && args.includes("--test")) return true;
+  return false;
+}
+
+// ── Message formatting ──────────────────────────────────────────────
+
 function formatMsg(template, vars) {
   let msg = template;
   for (const [k, v] of Object.entries(vars)) {
@@ -189,18 +207,8 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
 
     case "banned-pipe-source":
       if (segIdx !== 0 || pipeline.segments.length <= 1) return null;
-      // Only fire when the piped command is actually a test runner:
-      // - direct runners: pytest, vitest, jest, mocha, phpunit, rspec
-      // - PM test: npm/yarn/pnpm/bun test
-      // - PM run test: npm/yarn/pnpm/bun run test
-      // - lang test: cargo/go/dotnet/deno test
-      // - node --test
-      if (rule.test_commands && rule.test_commands.includes(cmd)) return rule.message;
-      if (rule.test_pm && rule.test_pm.includes(cmd) && args[0] === "test") return rule.message;
-      if (rule.test_pm && rule.test_pm.includes(cmd) && args[0] === "run" && args[1] === "test") return rule.message;
-      if (rule.test_lang && rule.test_lang.includes(cmd) && args[0] === "test") return rule.message;
-      if (cmd === "node" && args.includes("--test")) return rule.message;
-      return null;
+      if (!isTestCommand(cmd, args)) return null;
+      return rule.message;
 
     case "banned-subcommand":
       if (!rule.commands.includes(cmd)) return null;
@@ -246,6 +254,17 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
       for (const redir of redirects) {
         if (rule.targets.some((t) => redir.target === t)) {
           return rule.message;
+        }
+      }
+      return null;
+
+    case "banned-test-redirect":
+      if (!redirects || redirects.length === 0) return null;
+      if (!isTestCommand(cmd, args)) return null;
+      // Any output redirect on a test command is suppression
+      for (const redir of redirects) {
+        if (redir.op === ">" || redir.op === ">>" || redir.op === "2>" || redir.op === "2>>") {
+          return formatMsg(rule.message, { cmd, target: redir.target });
         }
       }
       return null;

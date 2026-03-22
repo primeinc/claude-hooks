@@ -119,6 +119,20 @@ check("allow", "pnpm test",               "pnpm test");
 check("allow", "bun test",                "bun test");
 check("allow", "bun run test",            "bun run test");
 
+// ── Rule 4b: test:* script variants are test commands ──
+check("block", "npm run test:coverage piped", "npm run test:coverage | cat", "Do not pipe test output. Run the test command directly and read the full output.");
+check("block", "npm test:unit piped",     "npm test:unit | cat",           "Do not pipe test output. Run the test command directly and read the full output.");
+check("allow", "npm run test:coverage",   "npm run test:coverage");
+
+// ── Rule: no redirecting test output to files ──
+check("block", "npm test > file",         "npm run test:coverage > /tmp/cov.txt 2>&1", "Do not redirect test output to a file (/tmp/cov.txt). Read the full output directly.");
+check("block", "npm test > log",          "npm test > test.log",           "Do not redirect test output to a file (test.log). Read the full output directly.");
+check("block", "jest > file",             "jest --coverage > results.txt", "Do not redirect test output to a file (results.txt). Read the full output directly.");
+check("block", "pytest > file",           "pytest > out.txt",              "Do not redirect test output to a file (out.txt). Read the full output directly.");
+check("block", "vitest 2> file",          "vitest run 2> errors.log",      "Do not redirect test output to a file (errors.log). Read the full output directly.");
+check("allow", "echo > file ok",          "echo hello > output.txt");
+check("allow", "git log > file ok",       "git log --oneline > log.txt");
+
 // ── Rule 5: package runners ──
 check("block", "npx",                      "npx eslint src/",              "Package runners (npx) are banned. Do not run arbitrary packages.");
 check("block", "bunx",                     "bunx vitest",                  "Package runners (bunx) are banned. Do not run arbitrary packages.");
@@ -157,7 +171,6 @@ check("block", "vitest > /dev/null",      "vitest run > /dev/null",        "Do n
 check("block", "jest > /dev/null 2>&1",   "jest --coverage > /dev/null 2>&1", "Do not redirect output to /dev/null. Read the full output.");
 check("block", "eslint 2>&1 >/dev/null",  "eslint src/ 2>&1 > /dev/null",  "Do not redirect output to /dev/null. Read the full output.");
 check("allow", "echo to file",           "echo hello > output.txt");
-check("allow", "npm test > log",         "npm test > test.log");
 
 // ── Rule: no --loglevel suppress ──
 check("block", "npm test loglevel silent", "npm test --loglevel silent",   "Do not suppress output with npm --loglevel. Read the full output.");

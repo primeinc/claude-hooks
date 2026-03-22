@@ -86,6 +86,12 @@
       "message": "Do not redirect output to /dev/null. Read the full output."
     },
     {
+      "id": "no-test-redirect",
+      "description": "Don't redirect test/lint output to files",
+      "type": "banned-test-redirect",
+      "message": "Do not redirect test output to a file ({target}). Read the full output directly."
+    },
+    {
       "id": "no-loglevel-suppress",
       "description": "Don't suppress npm output with --loglevel",
       "type": "banned-flag",
