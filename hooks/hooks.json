@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/frustration-detector/scripts/quick-detect.sh",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/frustration-detector/scripts/detect.js",
             "timeout": 5
           }
         ]

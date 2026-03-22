@@ -81,7 +81,14 @@ Run individually:
 
 ```bash
 npm run test:guards       # 72 bash guard cases
-npm run test:frustration  # 33 frustration detector cases
+npm run test:frustration  # 38 frustration detector cases (33 classifier + 5 hook format)
+```
+
+Benchmark with saved results:
+
+```bash
+npm run benchmark         # save timestamped results to tests/results/
+npm run compare           # compare accuracy trends across benchmark runs
 ```
 
 ## Architecture
@@ -95,8 +102,9 @@ claude-hooks/
 │   └── hooks.json           # Hook definitions (auto-discovered)
 ├── frustration-detector/
 │   ├── scripts/
-│   │   ├── quick-detect.sh      # Deterministic classifier — bash + grep
-│   │   └── test-frustration.js  # Test harness (33 cases)
+│   │   ├── detect.js            # Deterministic classifier — regex patterns
+│   │   ├── test-frustration.js  # Test harness (38 cases)
+│   │   └── compare-benchmarks.js # Benchmark comparison across runs
 │   └── tests/
 │       └── fixtures/
 │           └── test-cases.json
@@ -109,7 +117,7 @@ claude-hooks/
 └── .gitignore
 ```
 
-**No LLM in the pipeline.** The frustration detector uses deterministic bash + grep. The bash guard uses a Node.js tokenizer → AST → config-driven policy engine.
+**No LLM in the pipeline.** Both hooks are Node.js. The frustration detector uses regex pattern matching. The bash guard uses a tokenizer → AST → config-driven policy engine.
 
 ## Known Limitations
 

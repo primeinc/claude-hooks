@@ -6,6 +6,8 @@
   "scripts": {
     "test": "node bash-guards/scripts/test-guards.js && node frustration-detector/scripts/test-frustration.js",
     "test:guards": "node bash-guards/scripts/test-guards.js",
-    "test:frustration": "node frustration-detector/scripts/test-frustration.js"
+    "test:frustration": "node frustration-detector/scripts/test-frustration.js",
+    "benchmark": "node frustration-detector/scripts/test-frustration.js --benchmark --verbose",
+    "compare": "node frustration-detector/scripts/compare-benchmarks.js"
   }
 }
