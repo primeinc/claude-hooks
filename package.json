@@ -8,9 +8,6 @@
     "test:guards": "node bash-guards/scripts/test-guards.js",
     "test:frustration": "bash frustration-detector/tests/run-benchmarks.sh",
     "test:quick": "node bash-guards/scripts/test-guards.js",
-    "benchmark": "bash frustration-detector/tests/run-benchmarks.sh --verbose",
-    "validate": "node bash-guards/scripts/validate-bash.js",
-    "install-plugin": "claude plugin add .",
-    "clean": "rm -f bash-guards/scripts/validate-bash.sh bash-guards/scripts/test-guards.sh"
+    "benchmark": "bash frustration-detector/tests/run-benchmarks.sh --verbose"
   }
 }

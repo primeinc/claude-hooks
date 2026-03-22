@@ -1,6 +1,6 @@
 # claude-hooks
 
-Deterministic frustration detection + bash command guards for Claude Code. Pure bash, zero latency, no LLM in the hook pipeline.
+Deterministic frustration detection + AST-based bash command guards for Claude Code. No LLM in the hook pipeline.
 
 ## What it does
 
@@ -15,32 +15,48 @@ Deterministic frustration detection + bash command guards for Claude Code. Pure 
 
 Does **not** block messages. Returns `continue: true` with a `systemMessage` that nudges Claude without interrupting the user.
 
-**Bash Guards** — Blocks bad command patterns before execution:
+**Bash Guards** — AST-based command validator that blocks bad patterns before execution:
 
 | Rule | Blocked | Alternative |
 |------|---------|-------------|
-| `find` | `find . -name foo` | Use `rg.exe` or Glob tool |
-| `grep` | `grep -r pattern .` | Use `rg.exe` or Grep tool |
-| Truncation | `cmd \| head`, `cmd \| tail`, `cmd \| less` | Read full output directly |
+| `find` | `find . -name foo` | Glob tool |
+| `grep` | `grep -r pattern .` | Grep tool |
+| Truncation | `cmd \| head`, `cmd \| tail`, `cmd \| less`, `cmd \| more` | Read full output |
+| Test pipe | `npm test \| cat` | Run tests directly |
+| Package runners | `npx`, `bunx`, `pnpx`, `yarn dlx`, `pnpm dlx`, `npm exec` | Don't run arbitrary packages |
+| node_modules bin | `node_modules/.bin/eslint` | Don't run binaries directly |
+| Test runners | `vitest`, `jest`, `mocha`, `pytest`, `npm test`, etc. | Don't run tests directly |
+
+Rules are defined in `bash-guards/rules.json`. The engine parses commands into tokens and AST nodes, then applies policy against actual command structure — not regex substrings. Handles quotes, subshells, command substitution, and wrapper recursion (`bash -c`, `sh -lc`).
 
 ## Install
 
-Add the marketplace to your `~/.claude/settings.json`:
+This repo is a local marketplace. Register it in `~/.claude/settings.json`:
 
 ```json
 {
   "extraKnownMarketplaces": {
-    "claude-hooks": {
+    "local-hooks": {
       "source": {
-        "source": "github",
-        "repo": "primeinc/claude-hooks"
+        "source": "directory",
+        "path": "/absolute/path/to/claude-hooks"
       }
     }
   }
 }
 ```
 
-Then in Claude Code, run `/plugins` and enable `claude-hooks`.
+Then install the plugin:
+
+```
+claude plugin install claude-hooks@local-hooks
+```
+
+To update after changes, bump the version in `marketplace.json` and run:
+
+```
+claude plugin update claude-hooks
+```
 
 ## Development
 
@@ -52,36 +68,26 @@ claude --plugin-dir /path/to/claude-hooks
 
 This loads hooks directly from your source directory. Edits take effect on next session start — no version bumps or cache deletion needed.
 
-Without `--plugin-dir`, the plugin is cached at `~/.claude/plugins/cache/` at install time. Source directory edits have **zero effect** on running hooks until the cache is refreshed (version bump or manual cache deletion).
+Without `--plugin-dir`, the plugin is cached at `~/.claude/plugins/cache/` at install time. Source directory edits have **zero effect** on running hooks until the cache is refreshed (version bump in marketplace.json).
 
 ## Testing
 
-Run the full test suite (33 cases):
+Run all tests:
 
 ```bash
-cd claude-hooks
-while IFS= read -r line; do
-  id=$(echo "$line" | jq -r '.id')
-  input=$(echo "$line" | jq -r '.input')
-  expected=$(echo "$line" | jq -r '.expected_class')
-  result=$(echo "{\"prompt\":$(echo "$input" | jq -Rs .)}" \
-    | bash frustration-detector/scripts/quick-detect.sh 2>/dev/null)
-  if [ -z "$result" ]; then actual="NONE"
-  elif echo "$result" | grep -q "HIGH FRUSTRATION"; then actual="HIGH"
-  elif echo "$result" | grep -q "CIRCULAR RETRY"; then actual="CIRCULAR_RETRY"
-  elif echo "$result" | grep -q "MILD CORRECTION"; then actual="MILD"
-  elif echo "$result" | grep -q "SCOPE DRIFT"; then actual="SCOPE_DRIFT"
-  else actual="UNKNOWN"; fi
-  mark="PASS"; [ "$actual" != "$expected" ] && mark="FAIL"
-  printf "%-12s %-18s %-18s %s\n" "$id" "$expected" "$actual" "$mark"
-done < <(jq -c '.[]' frustration-detector/tests/fixtures/test-cases.json)
+npm test
 ```
 
-Test individual inputs:
+Run bash guard tests only (63 cases):
 
 ```bash
-echo '{"prompt":"your message here"}' | bash frustration-detector/scripts/quick-detect.sh
-echo '{"tool_input":{"command":"find . -name foo"}}' | bash bash-guards/scripts/validate-bash.sh
+npm run test:guards
+```
+
+Run frustration detector benchmarks:
+
+```bash
+npm run benchmark
 ```
 
 ## Architecture
@@ -89,32 +95,34 @@ echo '{"tool_input":{"command":"find . -name foo"}}' | bash bash-guards/scripts/
 ```
 claude-hooks/
 ├── .claude-plugin/
-│   ├── plugin.json          # Plugin manifest (name, version, description)
-│   └── marketplace.json     # Marketplace registration
+│   ├── plugin.json          # Plugin manifest (name, description)
+│   └── marketplace.json     # Local marketplace (version lives here)
 ├── hooks/
-│   └── hooks.json           # Hook definitions (auto-discovered by Claude Code)
+│   └── hooks.json           # Hook definitions (auto-discovered)
 ├── frustration-detector/
 │   ├── scripts/
 │   │   └── quick-detect.sh  # Deterministic classifier — bash + grep
 │   └── tests/
-│       └── fixtures/
-│           └── test-cases.json  # 33 test cases
+│       ├── fixtures/
+│       │   └── test-cases.json
+│       ├── run-benchmarks.sh
+│       └── run-quick-test.sh
 ├── bash-guards/
-│   ├── scripts/
-│   │   └── validate-bash.sh # Command validator — blocks find/grep/truncation
-│   └── tests/
-│       └── fixture-*.json   # Per-rule test fixtures
+│   ├── rules.json           # Policy rules — all config, no code
+│   └── scripts/
+│       ├── validate-bash.js  # AST engine — tokenizer, parser, policy
+│       └── test-guards.js    # Test harness (63 cases)
+├── package.json
 └── .gitignore
 ```
 
-**No LLM in the pipeline.** An earlier version used a prompt hook (Layer 2) for subtle signal detection. It was removed because prompt hooks cannot reliably ignore profanity — the LLM reacts to it regardless of instructions, blocking user messages instead of passing through. The deterministic bash approach is faster, predictable, and doesn't interfere with the user.
+**No LLM in the pipeline.** The frustration detector uses deterministic bash + grep. The bash guard uses a Node.js tokenizer → AST → config-driven policy engine.
 
 ## Known Limitations
 
 - **Hostile-but-clean language** ("nonsensical lazy approach", "this is garbage") is not detected. Deterministic regex can't distinguish hostile tone from technical descriptions without unacceptable false positive rates.
 - **Varied phrasing** of mild corrections may not match. The MILD patterns cover common phrasings but not all possible wordings.
-- **Plugin cache** does not auto-refresh from source. Bump the version in `plugin.json` or delete `~/.claude/plugins/cache/` after making changes.
-- **Bash guard regex** matches patterns inside quoted strings. `echo "find me"` will trigger the `find` guard. This is a fundamental limitation of line-based regex on shell commands.
+- **Plugin cache** does not auto-refresh from source. Bump the version in `marketplace.json` after making changes.
 
 ## Calibration
 
