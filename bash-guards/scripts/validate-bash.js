@@ -540,7 +540,9 @@ function checkSegmentStandards(seg, cwd) {
 
   return {
     decision: "block",
-    reason: `package.json script "${scriptName}" is missing required config: ${missing.join(", ")}. Either add to your lint script or set noInlineConfig: true in your eslint config file.`,
+    reason: standard.configMessage
+      ? `package.json script "${scriptName}" is missing required config: ${missing.join(", ")}. ${standard.configMessage}`
+      : `package.json script "${scriptName}" is missing required config: ${missing.join(", ")}. Either add to your script or set the equivalent in your config file.`,
   };
 }
 
