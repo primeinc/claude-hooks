@@ -21,12 +21,18 @@ Does **not** block messages. Returns `continue: true` with a `systemMessage` tha
 |------|---------|-------------|
 | `find` | `find . -name foo` | rg.exe |
 | `grep` | `grep -r pattern .` | rg.exe |
-| Truncation | `cmd \| head`, `cmd \| tail`, `cmd \| less`, `cmd \| more` | Read full output |
-| Test pipe | `npm test \| cat`, `pytest \| grep PASS` | Don't hide test results |
-| Package runners | `npx`, `bunx`, `pnpx`, `yarn dlx`, `pnpm dlx`, `npm exec` | Don't run arbitrary packages |
-| node_modules bin | `node_modules/.bin/eslint` | Don't run binaries directly |
+| Truncation | `cmd \| head`, `cmd \| tail` | Read full output |
+| Test pipe | `npm test \| cat` | Don't hide test results |
+| Test redirect | `npm test > file.txt` | Read output directly |
+| Test silent | `npm test --silent`, `--quiet` | Read full output |
+| Test reporter | `--reporter=dot` (minimal) | Use `--reporter=verbose` |
+| Test loglevel | `npm test --loglevel silent` | Read full output |
+| Output to /dev/null | `cmd > /dev/null` | Read full output |
+| Package runners | `npx`, `bunx`, `pnpx` (except `npx skills`) | Don't run arbitrary packages |
+| node_modules path | `node node_modules/eslint/bin/eslint.js` | Use `npm run lint` |
+| Lint standards | `npm run lint` without `--no-inline-config` | Fix package.json or eslint config |
 
-Rules are defined in `bash-guards/rules.json`. The engine parses commands into tokens and AST nodes, then applies policy against actual command structure — not regex substrings. Handles quotes, subshells, command substitution, and wrapper recursion (`bash -c`, `sh -lc`).
+Rules are defined in `bash-guards/rules.json`. The engine parses commands into tokens and AST, then applies policy against actual command structure — not regex substrings. Handles quotes, subshells, command substitution (`$()`, backticks), process substitution (`<()`), wrapper recursion (`bash -c`, `sh -lc`), and prefix commands (`env`, `exec`, `xargs`).
 
 ## Install
 
