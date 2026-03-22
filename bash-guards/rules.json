@@ -69,6 +69,14 @@
       "pattern": "node_modules/",
       "arg_must_also_match": ["eslint", "vitest", "jest", "mocha", "prettier", "tsc", "typescript", "biome", "oxlint", "pytest", "phpunit", "rspec"],
       "message": "Do not run test/lint tools from node_modules/ by path. Use npm scripts from package.json instead."
+    },
+    {
+      "id": "no-silent-tests",
+      "description": "Don't suppress test/lint output with silent/quiet flags",
+      "type": "banned-flag",
+      "commands": ["npm", "yarn", "pnpm", "bun", "vitest", "jest", "mocha", "eslint", "prettier", "tsc", "biome", "oxlint", "pytest", "phpunit", "rspec", "cargo", "go", "dotnet", "deno"],
+      "flags": ["--silent", "--quiet"],
+      "message": "Do not suppress test/lint output with {cmd} --silent/--quiet. Read the full output."
     }
   ],
   "wrappers": ["bash", "sh", "zsh"]

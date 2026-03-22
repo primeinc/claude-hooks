@@ -141,6 +141,15 @@ check("allow", "npx skills check",       "npx skills check");
 check("allow", "npx skills update",      "npx skills update");
 check("block", "npx not-skills",         "npx create-next-app",           "Package runners (npx) are banned. Do not run arbitrary packages.");
 
+// ── Rule: no silent/quiet on test/lint ──
+check("block", "npm test --silent",       "npm test --silent",             "Do not suppress test/lint output with npm --silent/--quiet. Read the full output.");
+check("block", "jest --silent",           "jest --silent",                 "Do not suppress test/lint output with jest --silent/--quiet. Read the full output.");
+check("block", "eslint --quiet",          "eslint src/ --quiet",           "Do not suppress test/lint output with eslint --silent/--quiet. Read the full output.");
+check("block", "vitest --silent",         "vitest run --silent",           "Do not suppress test/lint output with vitest --silent/--quiet. Read the full output.");
+check("block", "pytest --quiet",          "pytest --quiet",                "Do not suppress test/lint output with pytest --silent/--quiet. Read the full output.");
+check("allow", "npm test normal",         "npm test");
+check("allow", "git log --quiet",         "git log --quiet");
+
 // ── Wrapper recursion ──
 check("block", "bash -c grep",            "bash -c 'grep foo bar'",       "grep is banned. Use rg.exe instead.");
 check("block", "sh -c find",              "sh -c 'find . -name x'",       "find is banned. Use rg.exe instead.");
