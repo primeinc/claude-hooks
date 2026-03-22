@@ -19,6 +19,10 @@ const CONFIG = JSON.parse(
   readFileSync(join(__dirname, "..", "rules.json"), "utf8")
 );
 
+const TRANSPARENT_PREFIXES = new Set([
+  "env", "exec", "eval", "command", "time", "nice", "nohup", "strace", "sudo",
+]);
+
 // ── Shell tokenizer ──────────────────────────────────────────────────
 
 function tokenize(input) {
@@ -235,8 +239,8 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
       if (rule.commands && !rule.commands.includes(cmd)) return null;
       if (rule.test_only && !isTestCommand(cmd, args)) return null;
       if (!rule.flags.some((f) => args.some((a) => a === f || a.startsWith(f + "=")))) return null;
-      // For --reporter, allow verbose/full reporters
-      if (rule.allow_values) {
+      // For flags with values, extract the value and check block/allow lists
+      if (rule.block_values || rule.allow_values) {
         const flagHit = rule.flags.find((f) => args.some((a) => a === f || a.startsWith(f + "=")));
         if (flagHit) {
           const flagArg = args.find((a) => a === flagHit || a.startsWith(flagHit + "="));
@@ -244,7 +248,8 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
           let val = "";
           if (flagArg.includes("=")) val = flagArg.split("=")[1];
           else if (flagIdx + 1 < args.length) val = args[flagIdx + 1];
-          if (rule.allow_values.some((av) => val === av)) return null;
+          if (rule.block_values && !rule.block_values.some((bv) => val === bv)) return null;
+          if (rule.allow_values && rule.allow_values.some((av) => val === av)) return null;
         }
       }
       return formatMsg(rule.message, { cmd });
@@ -340,7 +345,6 @@ function evaluate(rawCommand) {
       }
 
       // Transparent prefix commands — strip themselves and run the rest
-      const TRANSPARENT_PREFIXES = new Set(["env", "exec", "eval", "command", "time", "nice", "nohup", "strace", "sudo"]);
       if (TRANSPARENT_PREFIXES.has(exe)) {
         let cmdStart = 0;
         for (let ai = 0; ai < args.length; ai++) {

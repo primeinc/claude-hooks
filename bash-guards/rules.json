@@ -26,9 +26,6 @@
       "id": "no-test-pipe",
       "description": "Don't pipe test output",
       "type": "banned-pipe-source",
-      "test_commands": ["vitest", "jest", "mocha", "pytest", "phpunit", "rspec"],
-      "test_pm": ["npm", "yarn", "pnpm", "bun"],
-      "test_lang": ["cargo", "go", "dotnet", "deno"],
       "message": "Do not pipe test output. Run the test command directly and read the full output."
     },
     {
@@ -84,7 +81,7 @@
       "type": "banned-flag",
       "test_only": true,
       "flags": ["--reporter"],
-      "allow_values": ["verbose", "default", "html", "json", "junit", "tap"],
+      "block_values": ["dot", "min", "nyan", "progress", "landing", "silent"],
       "message": "Do not use minimal test reporters with {cmd}. Use --reporter=verbose or default."
     },
     {

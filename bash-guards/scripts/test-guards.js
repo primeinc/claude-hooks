@@ -186,6 +186,9 @@ check("block", "vitest reporter dot",     "vitest run --reporter=dot",     msg("
 check("block", "mocha reporter dot",      "mocha --reporter dot",          msg("no-minimal-reporter", {cmd:"mocha"}));
 check("allow", "vitest reporter verbose", "vitest run --reporter=verbose");
 check("allow", "jest reporter json",      "jest --reporter=json");
+check("allow", "custom reporter",         "jest --reporter=github-actions");
+check("block", "reporter dot",            "vitest --reporter=dot", msg("no-minimal-reporter", {cmd:"vitest"}));
+check("block", "reporter min",            "mocha --reporter min", msg("no-minimal-reporter", {cmd:"mocha"}));
 
 // ── No /dev/null redirects ──
 check("block", "npm test 2>/dev/null",    "npm test 2>/dev/null",          msg("no-devnull-redirect"));
