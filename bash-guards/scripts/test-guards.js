@@ -223,6 +223,11 @@ check("block", "xargs find",             "echo . | xargs find",           msg("n
 check("block", "xargs grep",             "cat files.txt | xargs grep foo", msg("no-grep", {cmd:"grep"}));
 check("allow", "xargs safe cmd",         "echo file.txt | xargs cat");
 
+// ── Process substitution ──
+check("block", "proc sub find",          "diff <(find . -name '*.ts') list.txt", msg("no-find", {cmd:"find"}));
+check("block", "proc sub grep",          "diff <(grep foo a.txt) <(grep foo b.txt)", msg("no-grep", {cmd:"grep"}));
+check("allow", "proc sub safe",          "diff <(cat a.txt) <(cat b.txt)");
+
 // ── Should ALLOW ──
 check("allow", "git status",              "git status");
 check("allow", "npm run lint",            "npm run lint");

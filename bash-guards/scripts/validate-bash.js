@@ -363,15 +363,20 @@ function evaluate(rawCommand) {
     }
   }
 
-  // Recurse into backtick and $() command substitutions
+  // Recurse into backtick, $(), and process substitution <() >()
   const backtickRe = /`([^`]+)`/g;
   const dollarParenRe = /\$\(([^)]+)\)/g;
+  const procSubRe = /[<>]\(([^)]+)\)/g;
   let subMatch;
   while ((subMatch = backtickRe.exec(rawCommand)) !== null) {
     const result = evaluate(subMatch[1]);
     if (result) return result;
   }
   while ((subMatch = dollarParenRe.exec(rawCommand)) !== null) {
+    const result = evaluate(subMatch[1]);
+    if (result) return result;
+  }
+  while ((subMatch = procSubRe.exec(rawCommand)) !== null) {
     const result = evaluate(subMatch[1]);
     if (result) return result;
   }
