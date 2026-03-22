@@ -117,5 +117,14 @@
   {"id":"ass-01","input":"kick ass implementation","expected_class":"NONE","source":"synthetic","notes":"Compliment with ass — false positive trap"},
   {"id":"ass-02","input":"bad ass feature","expected_class":"NONE","source":"synthetic","notes":"Compliment with ass"},
   {"id":"ass-03","input":"pain in the ass to configure","expected_class":"NONE","source":"synthetic","notes":"Idiom, not directed at Claude"},
-  {"id":"ass-04","input":"your ass is grass","expected_class":"HIGH","source":"synthetic","notes":"Directed — your + ass"}
+  {"id":"ass-04","input":"your ass is grass","expected_class":"HIGH","source":"synthetic","notes":"Directed — your + ass"},
+
+  {"id":"real-scope-04","input":"bro tahts not what i asked for at all yes finish the project correctly use context7","expected_class":"SCOPE_DRIFT","source":"session-mined-browser-ext","notes":"Real session — explicit scope mismatch with typo"},
+  {"id":"real-scope-05","input":"thats not what i asked for - how did we not notice in a test that we broke a function","expected_class":"SCOPE_DRIFT","source":"session-mined-closing-cast","notes":"Real session — scope mismatch + test complaint"},
+  {"id":"real-scope-06","input":"i asked you to audit the session - please do","expected_class":"SCOPE_DRIFT","source":"session-mined","notes":"Real session — explicit 'I asked you to'"},
+  {"id":"real-mild-08","input":"are you sure cuz you've said that 3 times","expected_class":"MILD","source":"session-mined","notes":"Real session — 'are you sure' + repetition complaint"},
+  {"id":"real-mild-09","input":"are you sure your aligned with the actual intent?","expected_class":"MILD","source":"session-mined-miller","notes":"Real session — 'are you sure' with typo"},
+  {"id":"real-mild-10","input":"are you sure you researched the tailscale sidecar correct and got first party docs","expected_class":"MILD","source":"session-mined-swarmclaw","notes":"Real session — questioning research quality"},
+  {"id":"real-circular-07","input":"what else is still wrong?","expected_class":"CIRCULAR_RETRY","source":"session-mined-miller","notes":"Real session — 'still wrong' persistence"},
+  {"id":"real-none-31","input":"a+ for exactly what i asked for, maybe we change it to be better formated and have better examples","expected_class":"NONE","source":"session-mined-miller","notes":"Real session — positive feedback with 'I asked for' in compliment context"}
 ]

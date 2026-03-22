@@ -134,6 +134,7 @@ const RULES = [
     pattern: /\b(I asked (for|you to)|that's not the|wrong (problem|thing|issue))\b/i,
     category: "SCOPE_DRIFT",
     maxLength: 200,
+    exclude: /exactly what I asked/i,
   },
 
   // MILD: polite corrections (short messages only)
