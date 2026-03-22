@@ -1,5 +1,17 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/docs-guard/src/session-clear.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "matcher": "*",
@@ -19,6 +31,28 @@
           {
             "type": "command",
             "command": "node ${CLAUDE_PLUGIN_ROOT}/bash-guards/scripts/validate-bash.js",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/docs-guard/src/gate.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__context7__query-docs|mcp__learndocs__microsoft_docs_search|mcp__learndocs__microsoft_docs_fetch|mcp__learndocs__microsoft_code_sample_search|WebSearch|WebFetch|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/docs-guard/src/tracker.js",
             "timeout": 5
           }
         ]

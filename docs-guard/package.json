@@ -1,0 +1,17 @@
+{
+  "name": "docs-guard",
+  "version": "1.0.0",
+  "description": "AST-based enforcement: blocks Write/Edit of code using third-party libraries without prior doc lookup via context7, learndocs, or web search",
+  "main": "src/extract.js",
+  "scripts": {
+    "test": "node tests/test-extract.js && node tests/test-pipeline.js",
+    "test:extract": "node tests/test-extract.js",
+    "test:pipeline": "node tests/test-pipeline.js",
+    "replay": "node tests/replay-session.js"
+  },
+  "dependencies": {
+    "ts-morph": "^25.0.0"
+  },
+  "author": "primeinc",
+  "license": "ISC"
+}

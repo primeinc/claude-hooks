@@ -1,3 +1,4 @@
+node_modules/
 canary-fired.json
 frustration-detector/tests/results/
 bash-guards/.tmp-test/

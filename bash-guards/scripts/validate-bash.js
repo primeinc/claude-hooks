@@ -297,6 +297,26 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
       }
       return null;
 
+    case "required-companion-flag": {
+      if (rule.test_only && !isTestCommand(cmd, args)) return null;
+      // Check if when_flag is present (supports --flag=val and --flag val forms)
+      const hasWhenFlag = rule.when_flag.some((f) => {
+        // Direct match: --reporter=dot
+        if (args.some((a) => a === f)) return true;
+        // Split form: --reporter dot (flag contains =, check flag + next arg)
+        if (f.includes("=")) {
+          const [flagPart, valPart] = f.split("=");
+          for (let ai = 0; ai < args.length; ai++) {
+            if (args[ai] === flagPart && args[ai + 1] === valPart) return true;
+          }
+        }
+        return false;
+      });
+      if (!hasWhenFlag) return null;
+      if (rule.requires.every((r) => args.some((a) => a === r))) return null;
+      return formatMsg(rule.message, { cmd });
+    }
+
     case "banned-test-redirect":
       if (!redirects || redirects.length === 0) return null;
       if (!isTestCommand(cmd, args)) return null;
@@ -453,7 +473,7 @@ function hasTsconfigStrict(cwd) {
 }
 
 const LINT_STANDARDS = {
-  // script name → { scriptFlags, configCheck, configMessage }
+  // script name → { scriptFlags, configCheck, configMessage, bannedPatterns }
   lint: {
     scriptFlags: ["--no-inline-config"],
     configCheck: hasEslintConfigProtection,
@@ -463,6 +483,10 @@ const LINT_STANDARDS = {
     configCheck: hasTsconfigStrict,
     tscOnly: true,
     configMessage: 'tsconfig.json is missing "strict": true. Add to compilerOptions before building.',
+  },
+  "test:coverage": {
+    scriptFlags: ["--reporter=dot", "--no-color"],
+    configMessage: 'test:coverage must use --reporter=dot --no-color to keep output compact. Verbose/colored output gets truncated.',
   },
 };
 
@@ -497,6 +521,8 @@ function checkSegmentStandards(seg, cwd) {
   if (args[0] === "run" && args[1]) scriptName = args[1];
   else if (args[0] === "test") scriptName = "test";
   else if (["lint", "build", "start"].includes(args[0])) scriptName = args[0];
+  // Catch shorthand: yarn/pnpm/bun allow "test:unit" etc. directly
+  else if (args[0] && args[0].match(/^(test|lint|build)(:|$)/)) scriptName = args[0];
   if (!scriptName) return null;
 
   // Find which standard applies
@@ -507,9 +533,7 @@ function checkSegmentStandards(seg, cwd) {
       break;
     }
   }
-  if (!standard) return null;
-
-  // Read package.json
+  // Read package.json (needed for both standard checks and dot-reporter check)
   let pkg;
   try {
     const pkgPath = join(cwd, "package.json");
@@ -520,6 +544,18 @@ function checkSegmentStandards(seg, cwd) {
 
   const scriptValue = pkg.scripts?.[scriptName];
   if (!scriptValue) return null; // Script doesn't exist — don't block here
+
+  // Any test script using --reporter=dot must also have --no-color
+  if (scriptValue.includes("--reporter=dot") || scriptValue.includes("--reporter dot")) {
+    if (!scriptValue.includes("--no-color")) {
+      return {
+        decision: "block",
+        reason: `package.json script "${scriptName}" uses --reporter=dot without --no-color. ANSI codes bloat dot output.`,
+      };
+    }
+  }
+
+  if (!standard) return null;
 
   // For tscOnly standards, only check if the script actually uses tsc
   if (standard.tscOnly && !scriptValue.includes("tsc")) return null;

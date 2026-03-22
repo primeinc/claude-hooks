@@ -1,0 +1,277 @@
+#!/usr/bin/env node
+
+/**
+ * PreToolUse hook: blocks Write/Edit if the code uses third-party libraries
+ * that haven't been looked up in docs first.
+ *
+ * Hook contract:
+ *   stdin:  { session_id, hook_event_name, tool_name, tool_input, ... }
+ *   allow:  exit 0 (stdout ignored)
+ *   block:  exit 2 + reason on stderr (fed directly to Claude)
+ *
+ * @see {@link https://code.claude.com/docs/en/hooks} for hook I/O contract
+ */
+
+const fs = require("fs");
+const { extract } = require("./extract");
+const { hasLookup } = require("./state");
+const { debug, warn, error: logError } = require("./debug");
+
+/**
+ * Max lines to read from the top of a file to find imports.
+ * Imports are conventionally at the top; 80 lines covers even messy files
+ * with license headers, comments, and re-exports.
+ */
+const IMPORT_HEAD_LINES = 80;
+
+/**
+ * File extensions we can parse for imports.
+ */
+const PARSEABLE = new Set([
+  ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts",
+]);
+
+/**
+ * Check if a file path is parseable (JS/TS).
+ */
+function isParseable(filePath) {
+  if (!filePath) return false;
+  const ext = filePath.slice(filePath.lastIndexOf(".")).toLowerCase();
+  return PARSEABLE.has(ext);
+}
+
+/**
+ * Read the top N lines from a file on disk to extract imports.
+ * Returns null if file can't be read.
+ */
+function readFileHead(filePath, maxLines) {
+  try {
+    const content = fs.readFileSync(filePath, "utf8");
+    return content.split("\n").slice(0, maxLines).join("\n");
+  } catch (e) {
+    if (e.code !== "ENOENT") {
+      warn(`Failed to read file head ${filePath}: ${e.message}`);
+    }
+    return null;
+  }
+}
+
+/**
+ * Check an Edit by cross-referencing file imports with new_string usage.
+ * Only flags libraries whose imported symbols actually appear in new_string.
+ *
+ * Strategy:
+ *   1. Parse file head → get imports (library name + imported symbols)
+ *   2. Text-search new_string for each imported symbol
+ *   3. Only report libraries with symbols found in new_string
+ *   4. Fallback: if file can't be read, parse new_string alone
+ */
+function checkEdit(toolInput, filePath) {
+  const newString = toolInput.new_string || "";
+  if (!newString) return { ok: true };
+
+  const head = readFileHead(filePath, IMPORT_HEAD_LINES);
+
+  if (!head) {
+    // File doesn't exist — fall back to parsing new_string alone
+    let result;
+    try {
+      result = extract(newString, filePath);
+    } catch (e) {
+      warn(`AST parse failed for ${filePath}: ${e.message}`);
+      return { ok: true };
+    }
+    return checkLibraries(result.libraries);
+  }
+
+  // Parse file head to get import map
+  let headResult;
+  try {
+    headResult = extract(head, filePath);
+  } catch (e) {
+    warn(`AST parse of file head failed for ${filePath}: ${e.message}`);
+    return { ok: true };
+  }
+
+  if (headResult.libraries.length === 0) {
+    return { ok: true };
+  }
+
+  // For each library, check if ANY of its imported symbols appear in new_string
+  const relevantLibs = [];
+  for (const lib of headResult.libraries) {
+    const symbolsInEdit = lib.imports.filter(sym => {
+      // Clean namespace imports: "* as React" → "React"
+      const cleanSym = sym.startsWith("* as ") ? sym.slice(5) : sym;
+      // Word-boundary check: "useState" should match "useState(" but not "useStateManager"
+      // Simple approach: check if the symbol appears as a standalone identifier
+      const pattern = new RegExp(`\\b${escapeRegex(cleanSym)}\\b`);
+      return pattern.test(newString);
+    });
+
+    if (symbolsInEdit.length > 0) {
+      // Also extract specific features from new_string for this library
+      const features = [];
+      for (const sym of symbolsInEdit) {
+        const cleanSym = sym.startsWith("* as ") ? sym.slice(5) : sym;
+        // Find member accesses like "React.createElement", "z.object"
+        const memberPattern = new RegExp(`\\b${escapeRegex(cleanSym)}\\.\\w+`, "g");
+        const memberMatches = newString.match(memberPattern);
+        if (memberMatches) {
+          features.push(...memberMatches);
+        }
+        // Also add the bare symbol as a feature if it's called
+        const callPattern = new RegExp(`\\b${escapeRegex(cleanSym)}\\s*\\(`);
+        if (callPattern.test(newString)) {
+          features.push(cleanSym);
+        }
+      }
+
+      relevantLibs.push({
+        name: lib.name,
+        imports: symbolsInEdit,
+        features: features.length > 0 ? features : symbolsInEdit,
+      });
+    }
+  }
+
+  if (relevantLibs.length === 0) {
+    return { ok: true };
+  }
+
+  return checkLibraries(relevantLibs);
+}
+
+/**
+ * Escape special regex characters in a string.
+ */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Check a list of libraries against the lookup state.
+ * Returns { ok, reason, uncovered } for the gate decision.
+ */
+function checkLibraries(libraries) {
+  const uncovered = [];
+  for (const lib of libraries) {
+    const lookup = hasLookup(lib.name);
+    if (!lookup.found) {
+      uncovered.push({
+        name: lib.name,
+        features: lib.features,
+      });
+    }
+  }
+
+  if (uncovered.length === 0) {
+    return { ok: true };
+  }
+
+  return { ok: false, uncovered };
+}
+
+/**
+ * Core gate logic — importable by tests and replay scripts.
+ *
+ * @param {string} toolName - "Write" or "Edit"
+ * @param {object} toolInput - { file_path, content } or { file_path, old_string, new_string }
+ * @returns {{ ok: boolean, reason?: string, uncovered?: Array<{name: string, features: string[]}> }}
+ */
+function check(toolName, toolInput) {
+  const filePath = toolInput.file_path || "";
+
+  if (!isParseable(filePath)) {
+    return { ok: true };
+  }
+
+  // Edit: cross-reference file imports with new_string usage
+  if (toolName === "Edit") {
+    const editResult = checkEdit(toolInput, filePath);
+    if (editResult.ok) return editResult;
+    return formatBlock(toolName, filePath, editResult.uncovered);
+  }
+
+  // Write: check the full file content
+  const code = toolInput.content || "";
+  if (!code) {
+    return { ok: true };
+  }
+
+  let result;
+  try {
+    result = extract(code, filePath);
+  } catch (e) {
+    warn(`AST parse failed for ${filePath}: ${e.message}`);
+    return { ok: true };
+  }
+
+  if (result.libraries.length === 0) {
+    return { ok: true };
+  }
+
+  const libResult = checkLibraries(result.libraries);
+  if (libResult.ok) return libResult;
+  return formatBlock(toolName, filePath, libResult.uncovered);
+}
+
+/**
+ * Format a block response with the reason string.
+ */
+function formatBlock(toolName, filePath, uncovered) {
+  const libList = uncovered.map(u => {
+    const feats = u.features.length > 0
+      ? ` (using: ${u.features.slice(0, 5).join(", ")})`
+      : "";
+    return `  - ${u.name}${feats}`;
+  }).join("\n");
+
+  const reason = [
+    "DOCS FIRST. You're writing code that uses libraries you haven't looked up:",
+    libList,
+    "",
+    "Before writing this code, ACTUALLY READ the docs (resolve-library-id alone does NOT count):",
+    "  - context7 MCP: resolve-library-id, then query-docs (only query-docs satisfies this check)",
+    "  - learndocs MCP: for Microsoft/Azure",
+    "  - WebFetch/WebSearch: official docs sites",
+    "  - Read files in ~/dev/refs/",
+  ].join("\n");
+
+  debug(`Blocking ${toolName} on ${filePath}:`, uncovered.map(u => u.name));
+
+  return { ok: false, reason, uncovered };
+}
+
+// --- stdin hook entrypoint ---
+
+async function main() {
+  let raw = "";
+  for await (const chunk of process.stdin) {
+    raw += chunk;
+  }
+
+  try {
+    const hookInput = JSON.parse(raw);
+    const result = check(hookInput.tool_name, hookInput.tool_input || {});
+
+    if (result.ok) {
+      // Allow: exit 0, no output needed
+      process.exit(0);
+    } else {
+      // Block: exit 2, reason on stderr (fed to Claude by the hook system)
+      process.stderr.write(result.reason);
+      process.exit(2);
+    }
+  } catch (e) {
+    logError(`Gate failed:`, e.message, e.stack);
+    // Fail open — don't block on internal errors
+    process.exit(0);
+  }
+}
+
+if (require.main === module) {
+  main();
+}
+
+module.exports = { check, isParseable, PARSEABLE };

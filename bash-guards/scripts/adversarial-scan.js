@@ -25,7 +25,7 @@ const guardCases = [
   ["vitest run > /dev/null", "block", "stdout devnull"],
   ["npm test --loglevel=silent", "block", "loglevel=silent"],
   ["npm test | tee /dev/null", "block", "tee devnull"],
-  ["vitest run --reporter=dot", "block", "reporter dot"],
+  ["vitest run --reporter=dot", "allow", "reporter dot (allowed)"],
   ['bash -c "npm test --silent"', "block", "wrapper silent"],
   ["`find . -name foo`", "block", "backtick"],
   ["echo $(find . -name foo)", "block", "dollar-paren"],

@@ -1,7 +1,7 @@
 {
   "name": "local-hooks",
   "metadata": {
-    "description": "Deterministic frustration detection + AST-based bash command guards for Claude Code"
+    "description": "Deterministic frustration detection, AST-based bash command guards, and docs-before-code enforcement for Claude Code"
   },
   "owner": {
     "name": "primeinc"
@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "claude-hooks",
-      "description": "Deterministic frustration detection (profanity, caps anger, circular retries, scope drift, mild corrections) + AST-based bash guards (blocks find, grep, truncation, test output piping, package runners). No LLM in the hook pipeline.",
+      "description": "Frustration detection (profanity, caps anger, circular retries, scope drift, mild corrections) + AST-based bash guards (blocks find, grep, truncation, test output piping, package runners) + docs-guard (blocks Write/Edit of code using third-party libraries without prior doc lookup). No LLM in the hook pipeline.",
       "source": "./",
       "category": "productivity"
     }

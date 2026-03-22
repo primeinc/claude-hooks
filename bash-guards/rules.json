@@ -81,8 +81,17 @@
       "type": "banned-flag",
       "test_only": true,
       "flags": ["--reporter"],
-      "block_values": ["dot", "min", "nyan", "progress", "landing", "silent"],
-      "message": "Do not use minimal test reporters with {cmd}. Use --reporter=verbose or default."
+      "block_values": ["min", "nyan", "progress", "landing", "silent"],
+      "message": "Do not use minimal test reporters with {cmd}. Use --reporter=verbose, dot, or default."
+    },
+    {
+      "id": "dot-requires-no-color",
+      "description": "Dot reporter must use --no-color to avoid ANSI bloat",
+      "type": "required-companion-flag",
+      "test_only": true,
+      "when_flag": ["--reporter=dot"],
+      "requires": ["--no-color"],
+      "message": "{cmd} with --reporter=dot must also use --no-color. ANSI codes bloat dot output."
     },
     {
       "id": "no-devnull-redirect",

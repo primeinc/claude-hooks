@@ -183,12 +183,15 @@ check("allow", "npm install --quiet",     "npm install --quiet");
 check("allow", "cargo build --quiet",     "cargo build --quiet");
 
 // ── No minimal reporter ──
-check("block", "vitest reporter dot",     "vitest run --reporter=dot",     msg("no-minimal-reporter", {cmd:"vitest"}));
-check("block", "mocha reporter dot",      "mocha --reporter dot",          msg("no-minimal-reporter", {cmd:"mocha"}));
+check("block", "vitest dot no --no-color", "vitest run --reporter=dot",              msg("dot-requires-no-color", {cmd:"vitest"}));
+check("allow", "vitest dot with --no-color", "vitest run --reporter=dot --no-color");
+check("block", "mocha dot no --no-color",  "mocha --reporter dot",                   msg("dot-requires-no-color", {cmd:"mocha"}));
+check("allow", "mocha dot with --no-color", "mocha --reporter dot --no-color");
 check("allow", "vitest reporter verbose", "vitest run --reporter=verbose");
 check("allow", "jest reporter json",      "jest --reporter=json");
 check("allow", "custom reporter",         "jest --reporter=github-actions");
-check("block", "reporter dot",            "vitest --reporter=dot", msg("no-minimal-reporter", {cmd:"vitest"}));
+check("block", "reporter dot no color",   "vitest --reporter=dot",                   msg("dot-requires-no-color", {cmd:"vitest"}));
+check("allow", "reporter dot with color", "vitest --reporter=dot --no-color");
 check("block", "reporter min",            "mocha --reporter min", msg("no-minimal-reporter", {cmd:"mocha"}));
 
 // ── No /dev/null redirects ──
@@ -343,6 +346,33 @@ checkCwd("block", "build without strict tsconfig",   "npm run build", tscNoStric
 checkCwd("allow", "build with strict tsconfig",      "npm run build", tscStrict);
 checkCwd("allow", "non-tsc build not checked",       "npm run build", nonTscBuild);
 checkCwd("allow", "no build script",                 "npm run start", tscNoBuild);
+
+// ── test:coverage must use --reporter=dot --no-color ──
+const covVerbose = mkTmp("cov-verbose", { scripts: { "test:coverage": "vitest run --coverage --reporter=verbose" } });
+const covDotColor = mkTmp("cov-dot-color", { scripts: { "test:coverage": "vitest run --coverage --reporter=dot" } });
+const covDotNoColor = mkTmp("cov-dot-nocolor", { scripts: { "test:coverage": "vitest run --coverage --reporter=dot --no-color" } });
+const covNone = mkTmp("cov-none", { scripts: { "test:coverage": "vitest run --coverage" } });
+
+checkCwd("block", "coverage with verbose reporter",      "npm run test:coverage", covVerbose);
+checkCwd("block", "coverage dot but no --no-color",       "npm run test:coverage", covDotColor);
+checkCwd("allow", "coverage with dot and --no-color",     "npm run test:coverage", covDotNoColor);
+checkCwd("block", "coverage missing dot reporter",        "npm run test:coverage", covNone);
+
+// ── any test script with dot must have --no-color ──
+const testDotNoColor = mkTmp("test-dot-nocolor", { scripts: { "test": "vitest run --reporter=dot --no-color" } });
+const testDotColor = mkTmp("test-dot-color", { scripts: { "test": "vitest run --reporter=dot" } });
+const testUnitDot = mkTmp("test-unit-dot", { scripts: { "test:unit": "vitest run --reporter=dot" } });
+const testUnitDotOk = mkTmp("test-unit-dot-ok", { scripts: { "test:unit": "vitest run --reporter=dot --no-color" } });
+const testNoReporter = mkTmp("test-no-reporter", { scripts: { "test": "vitest run" } });
+
+checkCwd("allow", "test with dot + --no-color",        "npm test", testDotNoColor);
+checkCwd("block", "test with dot missing --no-color",   "npm test", testDotColor);
+checkCwd("block", "test:unit dot missing --no-color",   "npm run test:unit", testUnitDot);
+checkCwd("allow", "test:unit dot + --no-color",         "npm run test:unit", testUnitDotOk);
+checkCwd("allow", "test without dot reporter",           "npm test", testNoReporter);
+// yarn shorthand
+checkCwd("block", "yarn test:unit dot no color",        "yarn test:unit", testUnitDot);
+checkCwd("allow", "yarn test:unit dot ok",              "yarn test:unit", testUnitDotOk);
 
 // Cleanup
 rmSync(TMP, { recursive: true, force: true });
