@@ -89,6 +89,13 @@ function tokenize(input) {
         i++;
         while (i < len && input[i] !== '"') {
           if (input[i] === "\\" && i + 1 < len) { word += input[i + 1]; i += 2; continue; }
+          // Skip ${var} expansions inside double quotes
+          if (input[i] === "$" && i + 1 < len && input[i + 1] === "{") {
+            word += "${"; i += 2;
+            while (i < len && input[i] !== "}") { word += input[i]; i++; }
+            if (i < len) { word += "}"; i++; }
+            continue;
+          }
           word += input[i]; i++;
         }
         if (i < len) i++;
