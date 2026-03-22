@@ -126,5 +126,12 @@
   {"id":"real-mild-09","input":"are you sure your aligned with the actual intent?","expected_class":"MILD","source":"session-mined-miller","notes":"Real session — 'are you sure' with typo"},
   {"id":"real-mild-10","input":"are you sure you researched the tailscale sidecar correct and got first party docs","expected_class":"MILD","source":"session-mined-swarmclaw","notes":"Real session — questioning research quality"},
   {"id":"real-circular-07","input":"what else is still wrong?","expected_class":"CIRCULAR_RETRY","source":"session-mined-miller","notes":"Real session — 'still wrong' persistence"},
-  {"id":"real-none-31","input":"a+ for exactly what i asked for, maybe we change it to be better formated and have better examples","expected_class":"NONE","source":"session-mined-miller","notes":"Real session — positive feedback with 'I asked for' in compliment context"}
+  {"id":"real-none-31","input":"a+ for exactly what i asked for, maybe we change it to be better formated and have better examples","expected_class":"NONE","source":"session-mined-miller","notes":"Real session — positive feedback with 'I asked for' in compliment context"},
+
+  {"id":"multi-01","input":"damn that config is crappy","expected_class":"NONE","source":"synthetic","notes":"damn+crap together is casual, not rage"},
+  {"id":"multi-02","input":"this is damn crappy work","expected_class":"NONE","source":"synthetic","notes":"'this is damn' is casual speech"},
+  {"id":"instruction-01","input":"CHECK THE FUCKING GIT LOGS YOU FUCK","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — angry instruction, new HIGH message handles both"},
+  {"id":"question-01","input":"can you fix the shit in the build","expected_class":"NONE","source":"synthetic","notes":"Question form — 'can you' excludes from directed profanity"},
+  {"id":"question-02","input":"could you stop writing shitty code","expected_class":"NONE","source":"synthetic","notes":"Question form — 'could you' excludes"},
+  {"id":"directed-01","input":"you are so full of shit","expected_class":"HIGH","source":"synthetic","notes":"'you are' + profanity = directed"}
 ]

@@ -17,11 +17,10 @@
 
 const MESSAGES = {
   HIGH: [
-    "HIGH FRUSTRATION. The user is angry. STOP your current approach immediately.",
-    "Re-read their ORIGINAL request from the start of the conversation.",
-    "Identify where you diverged from what they wanted.",
-    "Do NOT continue what you were doing — change course.",
-    "Do not apologize — just fix it.",
+    "HIGH FRUSTRATION. The user is angry.",
+    "If their message contains a specific instruction or directive, DO THAT IMMEDIATELY — do not stop, do not re-read, do not apologize, just execute what they said.",
+    "If their message is pure frustration with no clear directive, STOP your current approach, re-read their ORIGINAL request from the start of the conversation, identify where you diverged, and change course.",
+    "Do not write apology essays. One sentence max, then act.",
   ].join(" "),
 
   CIRCULAR_RETRY: [
@@ -53,19 +52,27 @@ const RULES = [
   // No trailing \b on profanity stems so inflected forms (fucking, shitty) match.
   // Direction markers: you/your/you're, this/that, what the, holy
   {
-    pattern: /\b(your|you're)\b.{0,40}\b(fuck|shit|crap|damn|cunt|ass\b)|\b(fuck|shit|cunt)\w*.{0,20}\b(you|your|you're)\b|\byou\b.{0,20}\b(fuck|shit|crap|cunt|ass\b)/i,
+    pattern: /\b(your|you're|you are)\b.{0,40}\b(fuck|shit|crap|damn|cunt|ass\b)|\b(fuck|shit|cunt)\w*.{0,20}\b(you|your|you're)\b/i,
     category: "HIGH",
+  },
+
+  // HIGH: "you [profanity]" — but NOT after question words (can you, do you, will you)
+  {
+    pattern: /\byou\b.{0,15}\b(fuck|shit|crap|cunt|ass\b)/i,
+    category: "HIGH",
+    exclude: /\b(can|could|would|will|do|did|should|how do|if) you\b/i,
   },
 
   // HIGH: exclamatory profanity — "what the fuck", "holy shit", "that's bullshit", "that shit"
   {
-    pattern: /(what the|holy|oh my|are you|how the)\s+\w*(fuck|shit|crap|damn|hell)|\b(this is|that's|that is) (fuck|shit|crap|bull\s*shit|damn)|\bthat (shit|fuck|crap)\b.{0,10}(doesn|doesn|doesnt|won|isn|not|never|broken|wrong|fail)|\b(bull\s*shit|bullshit|cunt)\b/i,
+    pattern: /(what the|holy|oh my|are you|how the)\s+\w*(fuck|shit|crap|damn|hell)|\b(this is|that's|that is) (fuck|shit|crap|bull\s*shit)|\bthat (shit|fuck|crap)\b.{0,10}(doesn|doesn|doesnt|won|isn|not|never|broken|wrong|fail)|\b(bull\s*shit|bullshit|cunt)\b/i,
     category: "HIGH",
   },
 
-  // HIGH: multiple profanity words in one message = rage regardless of direction
+  // HIGH: multiple STRONG profanity words in one message = rage regardless of direction
+  // Only fuck/shit/cunt count — damn+crap together is casual speech
   {
-    pattern: /\b(fuck|shit|damn|crap|cunt)\w*\b.+\b(fuck|shit|damn|crap|cunt)\w*\b/i,
+    pattern: /\b(fuck|shit|cunt)\w*\b.+\b(fuck|shit|cunt)\w*\b/i,
     category: "HIGH",
   },
 
