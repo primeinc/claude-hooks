@@ -31,8 +31,9 @@ const MESSAGES = {
   ].join(" "),
 
   SCOPE_DRIFT: [
-    "SCOPE DRIFT. You are solving the wrong problem.",
-    "Re-read the original request and realign.",
+    "SCOPE DRIFT. The user says you're solving the wrong problem.",
+    "Stop what you're doing. Re-read the user's ORIGINAL request.",
+    "If they said 'I asked for X not Y', do X. Do not continue Y.",
   ].join(" "),
 
   MILD: [
