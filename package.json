@@ -1,0 +1,16 @@
+{
+  "name": "claude-hooks",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Deterministic frustration detection + AST-based bash command guards for Claude Code",
+  "scripts": {
+    "test": "npm run test:guards && npm run test:frustration",
+    "test:guards": "node bash-guards/scripts/test-guards.js",
+    "test:frustration": "bash frustration-detector/tests/run-benchmarks.sh",
+    "test:quick": "node bash-guards/scripts/test-guards.js",
+    "benchmark": "bash frustration-detector/tests/run-benchmarks.sh --verbose",
+    "validate": "node bash-guards/scripts/validate-bash.js",
+    "install-plugin": "claude plugin add .",
+    "clean": "rm -f bash-guards/scripts/validate-bash.sh bash-guards/scripts/test-guards.sh"
+  }
+}

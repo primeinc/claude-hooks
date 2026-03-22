@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/bash-guards/scripts/validate-bash.sh",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/bash-guards/scripts/validate-bash.js",
             "timeout": 5
           }
         ]
