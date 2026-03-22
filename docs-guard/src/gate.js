@@ -227,15 +227,19 @@ function formatBlock(toolName, filePath, uncovered) {
     return `  - ${u.name}${feats}`;
   }).join("\n");
 
+  // Build specific lookup suggestions for each library
+  const suggestions = uncovered.map(u => {
+    const topFeature = u.features[0] || u.name;
+    return `  1. resolve-library-id(libraryName: "${u.name}", query: "${topFeature}")` +
+      `\n  2. query-docs(libraryId: <from step 1>, query: "${u.features.slice(0, 3).join(", ") || u.name}")`;
+  }).join("\n");
+
   const reason = [
     "DOCS FIRST. You're writing code that uses libraries you haven't looked up:",
     libList,
     "",
-    "Before writing this code, ACTUALLY READ the docs (resolve-library-id alone does NOT count):",
-    "  - context7 MCP: resolve-library-id, then query-docs (only query-docs satisfies this check)",
-    "  - learndocs MCP: for Microsoft/Azure",
-    "  - WebFetch/WebSearch: official docs sites",
-    "  - Read files in ~/dev/refs/",
+    "Look up the docs NOW (resolve-library-id alone does NOT count — you must call query-docs):",
+    suggestions,
   ].join("\n");
 
   debug(`Blocking ${toolName} on ${filePath}:`, uncovered.map(u => u.name));

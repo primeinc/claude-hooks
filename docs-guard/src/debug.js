@@ -17,7 +17,8 @@ const os = require("os");
 const debugEnabled = process.env.DOCS_GUARD_DEBUG === "1";
 const logFilePath = process.env.DOCS_GUARD_LOG
   || path.join(os.tmpdir(), "docs-guard.log");
-const logToFile = !!process.env.DOCS_GUARD_LOG || debugEnabled;
+// Always log to file. You can't debug a hook that doesn't leave a trace.
+const logToFile = true;
 const maxLogBytes = (parseInt(process.env.DOCS_GUARD_LOG_MAX_KB, 10) || 512) * 1024;
 
 /**
