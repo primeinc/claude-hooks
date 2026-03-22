@@ -71,16 +71,17 @@ Without `--plugin-dir`, the plugin is cached at `~/.claude/plugins/cache/` at in
 
 ## Testing
 
-Run bash guard tests:
+Run all tests:
 
 ```bash
 npm test
 ```
 
-Run frustration detector benchmarks (requires `claude` CLI):
+Run individually:
 
 ```bash
-npm run benchmark
+npm run test:guards       # 72 bash guard cases
+npm run test:frustration  # 33 frustration detector cases
 ```
 
 ## Architecture
@@ -94,17 +95,16 @@ claude-hooks/
 │   └── hooks.json           # Hook definitions (auto-discovered)
 ├── frustration-detector/
 │   ├── scripts/
-│   │   └── quick-detect.sh  # Deterministic classifier — bash + grep
+│   │   ├── quick-detect.sh      # Deterministic classifier — bash + grep
+│   │   └── test-frustration.js  # Test harness (33 cases)
 │   └── tests/
-│       ├── fixtures/
-│       │   └── test-cases.json
-│       ├── run-benchmarks.sh
-│       └── run-quick-test.sh
+│       └── fixtures/
+│           └── test-cases.json
 ├── bash-guards/
 │   ├── rules.json           # Policy rules — all config, no code
 │   └── scripts/
 │       ├── validate-bash.js  # AST engine — tokenizer, parser, policy
-│       └── test-guards.js    # Test harness (63 cases)
+│       └── test-guards.js    # Test harness (72 cases)
 ├── package.json
 └── .gitignore
 ```

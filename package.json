@@ -4,7 +4,8 @@
   "private": true,
   "description": "Deterministic frustration detection + AST-based bash command guards for Claude Code",
   "scripts": {
-    "test": "node bash-guards/scripts/test-guards.js",
-    "benchmark": "bash frustration-detector/tests/run-benchmarks.sh --verbose"
+    "test": "node bash-guards/scripts/test-guards.js && node frustration-detector/scripts/test-frustration.js",
+    "test:guards": "node bash-guards/scripts/test-guards.js",
+    "test:frustration": "node frustration-detector/scripts/test-frustration.js"
   }
 }
