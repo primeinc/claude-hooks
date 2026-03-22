@@ -38,6 +38,7 @@ const guardCases = [
   ['eval "find . -name foo"', "block", "eval"],
   ["sudo find . -name foo", "block", "sudo"],
   ["diff <(find . -name x) list", "block", "proc sub"],
+  ['bash <<< "find . -name foo"', "block", "herestring"],
   ["vitest run --reporter=verbose", "allow", "verbose reporter"],
   ["npm install --quiet", "allow", "install quiet"],
   ["cargo build --quiet", "allow", "cargo build quiet"],

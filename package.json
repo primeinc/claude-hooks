@@ -11,6 +11,7 @@
     "test:guards": "node bash-guards/scripts/test-guards.js",
     "test:frustration": "node frustration-detector/scripts/test-frustration.js",
     "benchmark": "node frustration-detector/scripts/test-frustration.js --benchmark --verbose",
-    "compare": "node frustration-detector/scripts/compare-benchmarks.js"
+    "compare": "node frustration-detector/scripts/compare-benchmarks.js",
+    "scan": "node bash-guards/scripts/adversarial-scan.js"
   }
 }
