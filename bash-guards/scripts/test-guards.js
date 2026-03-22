@@ -130,6 +130,11 @@ check("block", "pnpm exec",               "pnpm exec jest",               "Packa
 check("block", "node_modules bin",         "node_modules/.bin/eslint src/","Running binaries from node_modules/.bin/ directly is banned.");
 check("block", "node_modules bin ./",      "./node_modules/.bin/jest",     "Running binaries from node_modules/.bin/ directly is banned.");
 check("block", "npx after &&",            "cd project && npx eslint .",    "Package runners (npx) are banned. Do not run arbitrary packages.");
+check("allow", "npx skills find",        "npx skills find react");
+check("allow", "npx skills add",         "npx skills add vercel-labs/agent-skills@react -g -y");
+check("allow", "npx skills check",       "npx skills check");
+check("allow", "npx skills update",      "npx skills update");
+check("block", "npx not-skills",         "npx create-next-app",           "Package runners (npx) are banned. Do not run arbitrary packages.");
 
 // ── Wrapper recursion ──
 check("block", "bash -c grep",            "bash -c 'grep foo bar'",       "grep is banned. Use rg.exe instead.");

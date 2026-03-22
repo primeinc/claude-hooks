@@ -170,6 +170,7 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
     case "banned-command":
       if (!rule.commands.includes(cmd)) return null;
       if (rule.exempt_when && rawCommand.includes(rule.exempt_when)) return null;
+      if (rule.exempt_subcommands && rule.exempt_subcommands.includes(args[0])) return null;
       return formatMsg(rule.message, { cmd });
 
     case "banned-pipe-target":

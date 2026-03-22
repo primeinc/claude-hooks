@@ -36,6 +36,7 @@
       "description": "No arbitrary package execution",
       "type": "banned-command",
       "commands": ["npx", "bunx", "pnpx"],
+      "exempt_subcommands": ["skills"],
       "message": "Package runners ({cmd}) are banned. Do not run arbitrary packages."
     },
     {
