@@ -210,9 +210,27 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
       if (!rule.flags.some((f) => args.includes(f))) return null;
       return formatMsg(rule.message, { cmd });
 
-    case "banned-path-pattern":
-      if (!fullPath.includes(rule.pattern) && !fullPath.replace(/\\/g, "/").includes(rule.pattern)) return null;
-      return rule.message;
+    case "banned-path-pattern": {
+      const normalize = (s) => s.replace(/\\/g, "/");
+      const pat = rule.pattern;
+      if (normalize(fullPath).includes(pat)) return rule.message;
+      for (const arg of args) {
+        if (normalize(arg).includes(pat)) return rule.message;
+      }
+      return null;
+    }
+
+    case "banned-arg-pattern": {
+      const norm = (s) => s.replace(/\\/g, "/");
+      const allWords = [fullPath, ...args];
+      for (const w of allWords) {
+        const nw = norm(w);
+        if (nw.includes(rule.pattern) && rule.arg_must_also_match.some((t) => nw.includes(t))) {
+          return rule.message;
+        }
+      }
+      return null;
+    }
 
     default:
       return null;

@@ -60,7 +60,15 @@
       "description": "No direct node_modules/.bin/ execution",
       "type": "banned-path-pattern",
       "pattern": "node_modules/.bin/",
-      "message": "Running binaries from node_modules/.bin/ directly is banned."
+      "message": "Do not run binaries from node_modules/.bin/ directly. Use npm scripts from package.json instead."
+    },
+    {
+      "id": "no-test-tool-by-path",
+      "description": "Run test/lint tools via package.json, not by path",
+      "type": "banned-arg-pattern",
+      "pattern": "node_modules/",
+      "arg_must_also_match": ["eslint", "vitest", "jest", "mocha", "prettier", "tsc", "typescript", "biome", "oxlint", "pytest", "phpunit", "rspec"],
+      "message": "Do not run test/lint tools from node_modules/ by path. Use npm scripts from package.json instead."
     }
   ],
   "wrappers": ["bash", "sh", "zsh"]

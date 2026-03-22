@@ -127,8 +127,13 @@ check("block", "pnpm dlx",                 "pnpm dlx degit",              "Packa
 check("block", "npm exec",                 "npm exec -- eslint .",         "Package runners (npm exec) are banned. Do not run arbitrary packages.");
 check("block", "yarn exec",                "yarn exec tsc",               "Package runners (yarn exec) are banned. Do not run arbitrary packages.");
 check("block", "pnpm exec",               "pnpm exec jest",               "Package runners (pnpm exec) are banned. Do not run arbitrary packages.");
-check("block", "node_modules bin",         "node_modules/.bin/eslint src/","Running binaries from node_modules/.bin/ directly is banned.");
-check("block", "node_modules bin ./",      "./node_modules/.bin/jest",     "Running binaries from node_modules/.bin/ directly is banned.");
+check("block", "node_modules bin",         "node_modules/.bin/eslint src/","Do not run binaries from node_modules/.bin/ directly. Use npm scripts from package.json instead.");
+check("block", "node_modules bin ./",      "./node_modules/.bin/jest",     "Do not run binaries from node_modules/.bin/ directly. Use npm scripts from package.json instead.");
+check("block", "node bypass via node",     "node node_modules/eslint/bin/eslint.js src/", "Do not run test/lint tools from node_modules/ by path. Use npm scripts from package.json instead.");
+check("block", "node bypass with flags",   "node --no-warnings node_modules/eslint/bin/eslint.js src/ --max-warnings 0", "Do not run test/lint tools from node_modules/ by path. Use npm scripts from package.json instead.");
+check("block", "node bypass vitest",       "node node_modules/vitest/vitest.mjs run", "Do not run test/lint tools from node_modules/ by path. Use npm scripts from package.json instead.");
+check("allow", "node_modules non-tool",    "node node_modules/blowjob/index.js");
+check("allow", "cat node_modules readme",  "cat node_modules/some-pkg/README.md");
 check("block", "npx after &&",            "cd project && npx eslint .",    "Package runners (npx) are banned. Do not run arbitrary packages.");
 check("allow", "npx skills find",        "npx skills find react");
 check("allow", "npx skills add",         "npx skills add vercel-labs/agent-skills@react -g -y");
