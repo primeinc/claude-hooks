@@ -125,7 +125,7 @@ const RULES = [
 
   // CIRCULAR RETRY: past-tense failure references
   {
-    pattern: /\b(didn't work last time|that didn't work|that doesn't work|not working again)\b/i,
+    pattern: /\b(didn't work last time|that didn't work|that doesn't work|this doesn't work|this doesnt work|it doesn't work|it doesnt work|not working again)\b/i,
     category: "CIRCULAR_RETRY",
   },
 

@@ -268,7 +268,7 @@ const mkTmp = (name, pkgJson, eslintConfig) => {
   return dir;
 };
 
-const badLint = mkTmp("bad-lint", { scripts: { lint: "eslint src/" } });
+const badLint = mkTmp("bad-lint", { scripts: { lint: "eslint src/", "lint:fix": "eslint src/ --fix" } });
 const goodLint = mkTmp("good-lint", { scripts: { lint: "eslint src/ --no-inline-config" } });
 const configLint = mkTmp("config-lint", { scripts: { lint: "eslint src/" } }, "module.exports = [{ linterOptions: { noInlineConfig: true } }]");
 const noScripts = mkTmp("no-scripts", {});
@@ -322,6 +322,7 @@ checkCwd("block", "yarn lint missing config",         "yarn lint", badLint);
 checkCwd("block", "pnpm run lint missing config",     "pnpm run lint", badLint);
 checkCwd("allow", "npm test not checked",             "npm test", badLint);
 checkCwd("block", "lint first in chain",              "npm run lint && npm run build", badLint);
+checkCwd("block", "lint:fix missing config",          "npm run lint:fix", badLint);
 
 // ── tsconfig strict check ──
 const tscNoStrict = mkTmp("tsc-no-strict", { scripts: { build: "tsc" } });
