@@ -48,7 +48,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "mcp__context7__query-docs|mcp__learndocs__microsoft_docs_search|mcp__learndocs__microsoft_docs_fetch|mcp__learndocs__microsoft_code_sample_search|WebSearch|WebFetch|Read",
+        "matcher": "mcp__context7__resolve-library-id|mcp__context7__query-docs|mcp__learndocs__microsoft_docs_search|mcp__learndocs__microsoft_docs_fetch|mcp__learndocs__microsoft_code_sample_search|WebSearch|WebFetch|Read",
         "hooks": [
           {
             "type": "command",

@@ -8,7 +8,8 @@
  */
 
 const { clearState, getStatePath, dumpState } = require("./state");
-const { debug, error: logError } = require("./debug");
+const { createLogger, setContext } = require("../../lib/logger");
+const log = createLogger("docs-guard");
 
 async function main() {
   let raw = "";
@@ -18,24 +19,24 @@ async function main() {
 
   try {
     const hookInput = JSON.parse(raw);
+    setContext({ session_id: hookInput.session_id, hook_event_name: hookInput.hook_event_name });
     const source = hookInput.source || "unknown";
-    const sessionId = hookInput.session_id || "unknown";
-    const statePath = getStatePath();
     const currentState = dumpState();
     const lookupCount = currentState.lookups?.length || 0;
+    const mappingCount = currentState.mappings?.length || 0;
 
-    debug(`SessionStart source="${source}" session="${sessionId}" statePath="${statePath}" existingLookups=${lookupCount}`);
+    log.info("SessionStart", { source, lookups: lookupCount, mappings: mappingCount, statePath: getStatePath() });
 
     if (source === "startup") {
-      debug(`Fresh session — clearing ${lookupCount} lookups`);
+      log.info("Fresh session — clearing state", { lookups: lookupCount, mappings: mappingCount });
       clearState();
     } else {
-      debug(`${source} — preserving ${lookupCount} lookups`);
+      log.debug("Preserving state", { source, lookups: lookupCount, mappings: mappingCount });
     }
 
     process.exit(0);
   } catch (e) {
-    logError(`Session clear failed:`, e.message);
+    log.error("Session clear failed", { error: e.message });
     process.exit(1);
   }
 }

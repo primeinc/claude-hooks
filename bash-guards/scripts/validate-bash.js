@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 "use strict";
 
+const { createLogger, setContext } = require("../../lib/logger");
+const bashLog = createLogger("bash-guards");
+
 /**
  * AST-based Bash command validator for Claude Code hooks.
  *
@@ -601,12 +604,16 @@ process.stdin.on("data", (chunk) => { input += chunk; });
 process.stdin.on("end", () => {
   let parsed;
   try { parsed = JSON.parse(input); } catch { process.exit(0); }
+  setContext({ session_id: parsed?.session_id, hook_event_name: parsed?.hook_event_name, tool_name: parsed?.tool_name });
   const cmd = parsed?.tool_input?.command;
   const cwd = parsed?.cwd;
   if (!cmd || typeof cmd !== "string" || !cmd.trim()) process.exit(0);
 
+  bashLog.debug("Evaluating", { command: cmd.slice(0, 200) });
+
   const result = evaluate(cmd);
   if (result) {
+    bashLog.info("Blocked", { rule: result.ruleId || "unknown", reason: result.reason, command: cmd.slice(0, 100) });
     const output = JSON.stringify({
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
@@ -621,6 +628,7 @@ process.stdin.on("end", () => {
   // Check package.json standards for lint/test commands
   const stdResult = checkPackageJsonStandards(cmd, cwd);
   if (stdResult) {
+    bashLog.info("Blocked (standards)", { reason: stdResult.reason, command: cmd.slice(0, 100) });
     const output = JSON.stringify({
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
@@ -632,6 +640,7 @@ process.stdin.on("end", () => {
     process.exit(0);
   }
 
+  bashLog.debug("Allowed");
   process.exit(0);
 });
 

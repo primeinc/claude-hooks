@@ -1,6 +1,6 @@
 {
   "name": "@primeinc/claude-hooks",
-  "version": "3.3.2",
+  "version": "4.0.0",
   "private": true,
   "description": "Deterministic frustration detection, AST-based bash command guards, and docs-before-code enforcement for Claude Code",
   "author": "primeinc",
@@ -15,7 +15,7 @@
     "ts-morph": "^25.0.0"
   },
   "scripts": {
-    "test": "node bash-guards/scripts/test-guards.js && node frustration-detector/scripts/test-frustration.js && node docs-guard/tests/test-extract.js && node docs-guard/tests/test-pipeline.js && node docs-guard/tests/test-real-ids.js",
+    "test": "node bash-guards/scripts/test-guards.js && node frustration-detector/scripts/test-frustration.js && node docs-guard/tests/test-extract.js && node docs-guard/tests/test-pipeline.js && node docs-guard/tests/test-real-ids.js && node docs-guard/tests/test-failure-modes.js",
     "test:guards": "node bash-guards/scripts/test-guards.js",
     "test:frustration": "node frustration-detector/scripts/test-frustration.js",
     "test:docs-guard": "node docs-guard/tests/test-extract.js && node docs-guard/tests/test-pipeline.js",

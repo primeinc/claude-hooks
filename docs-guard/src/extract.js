@@ -141,6 +141,37 @@ function extract(code, filename) {
     }
   }
 
+  // 1b. Extract CommonJS require() calls: const x = require("lib")
+  const allCalls = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
+  for (const call of allCalls) {
+    const expr = call.getExpression();
+    if (expr.getText() !== "require") continue;
+    const args = call.getArguments();
+    if (args.length === 0) continue;
+    const arg = args[0];
+    if (arg.getKind() !== SyntaxKind.StringLiteral) continue;
+    const specifier = arg.getText().slice(1, -1); // strip quotes
+    if (!isThirdParty(specifier)) continue;
+
+    const pkgName = getPackageName(specifier);
+    if (!libraryMap.has(pkgName)) {
+      libraryMap.set(pkgName, { imports: new Set(), features: new Set() });
+    }
+    // Extract variable binding: const x = require(...) or const { a, b } = require(...)
+    const parent = call.getParent();
+    if (parent?.getKind() === SyntaxKind.VariableDeclaration) {
+      const nameNode = parent.getNameNode();
+      if (nameNode.getKind() === SyntaxKind.ObjectBindingPattern) {
+        for (const element of nameNode.getElements()) {
+          libraryMap.get(pkgName).imports.add(element.getName());
+        }
+      } else {
+        const varName = parent.getName();
+        if (varName) libraryMap.get(pkgName).imports.add(varName);
+      }
+    }
+  }
+
   // 2. Extract call expressions and map to libraries
   const callExprs = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
 

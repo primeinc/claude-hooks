@@ -181,5 +181,52 @@ test("code with no imports returns no libraries", () => {
   assert(result.libraries.length === 0);
 });
 
+// --- CommonJS require() tests ---
+
+test("extracts simple require", () => {
+  const result = extract(`
+    const express = require("express");
+    const app = express();
+  `, "app.js");
+  assert(result.libraries.length === 1, `Expected 1, got ${result.libraries.length}`);
+  assert(result.libraries[0].name === "express");
+  assert(result.libraries[0].imports.includes("express"));
+  assert(result.libraries[0].features.includes("express"));
+});
+
+test("extracts destructured require", () => {
+  const result = extract(`
+    const { useState, useEffect } = require("react");
+    useState(0);
+    useEffect(() => {});
+  `, "app.js");
+  assert(result.libraries.length === 1);
+  assert(result.libraries[0].name === "react");
+  assert(result.libraries[0].imports.includes("useState"));
+  assert(result.libraries[0].imports.includes("useEffect"));
+  assert(result.libraries[0].features.includes("useState"));
+});
+
+test("ignores require of node builtins", () => {
+  const result = extract(`
+    const fs = require("fs");
+    const path = require("path");
+    fs.readFileSync("x");
+  `, "app.js");
+  assert(result.libraries.length === 0);
+});
+
+test("handles mixed ESM imports and require", () => {
+  const result = extract(`
+    import { z } from "zod";
+    const express = require("express");
+    z.string();
+    express();
+  `, "app.ts");
+  assert(result.libraries.length === 2);
+  const names = result.libraries.map(l => l.name).sort();
+  assert(names[0] === "express" && names[1] === "zod", `Got: ${names}`);
+});
+
 console.log(`\n--- Results: ${passed} passed, ${failed} failed ---\n`);
 process.exit(failed > 0 ? 1 : 0);

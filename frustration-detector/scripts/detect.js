@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 "use strict";
 
+const { createLogger, setContext } = require("../../lib/logger");
+const frustLog = createLogger("frustration-detector");
+
 /**
  * Deterministic frustration detector for Claude Code hooks.
  *
@@ -193,6 +196,7 @@ if (require.main === module) {
     let prompt;
     try {
       const parsed = JSON.parse(input);
+      setContext({ session_id: parsed.session_id, hook_event_name: parsed.hook_event_name });
       prompt = parsed.prompt || parsed.user_prompt;
     } catch {
       process.exit(0);
@@ -200,12 +204,17 @@ if (require.main === module) {
 
     if (!prompt || typeof prompt !== "string") process.exit(0);
 
+    frustLog.debug("Classifying", { promptLength: prompt.length });
+
     const category = classify(prompt);
     if (category) {
+      frustLog.info("Detected", { category: category.name, score: category.score });
       const output = hookOutput(category);
       if (output) {
         process.stdout.write(JSON.stringify(output) + "\n");
       }
+    } else {
+      frustLog.debug("No match");
     }
     process.exit(0);
   });

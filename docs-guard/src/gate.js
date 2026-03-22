@@ -15,7 +15,11 @@
 const fs = require("fs");
 const { extract } = require("./extract");
 const { hasLookup } = require("./state");
-const { debug, warn, error: logError } = require("./debug");
+const { createLogger, setContext } = require("../../lib/logger");
+const log = createLogger("docs-guard");
+const debug = log.debug;
+const warn = log.warn;
+const logError = log.error;
 
 /**
  * Max lines to read from the top of a file to find imports.
@@ -155,13 +159,24 @@ function escapeRegex(str) {
  */
 function checkLibraries(libraries) {
   const uncovered = [];
+  const degraded = [];
+
   for (const lib of libraries) {
     const lookup = hasLookup(lib.name);
-    debug(`  hasLookup("${lib.name}"): ${lookup.found ? "FOUND" : "NOT FOUND"} (${lookup.lookups.length} matches)`);
+    debug(`  hasLookup("${lib.name}"): ${lookup.found ? "FOUND via " + lookup.method : "NOT FOUND"} (${lookup.lookups.length} matches)`);
+
     if (lookup.found) {
-      debug(`    matched via: ${lookup.lookups.map(l => `${l.source}:"${l.library}"`).join(", ")}`);
-    }
-    if (!lookup.found) {
+      if (lookup.method) {
+        debug(`    method: ${lookup.method}, matched: ${lookup.lookups.map(l => `${l.source}:"${l.library}"`).join(", ")}`);
+      }
+    } else if (lookup.degraded && lookup.resolveAttempted) {
+      // Resolve happened but query-docs never completed — this is NOT "user skipped docs"
+      debug(`  DEGRADED: resolve attempted for "${lib.name}" but query-docs never completed`);
+      degraded.push({
+        name: lib.name,
+        features: lib.features,
+      });
+    } else {
       uncovered.push({
         name: lib.name,
         features: lib.features,
@@ -169,12 +184,12 @@ function checkLibraries(libraries) {
     }
   }
 
-  if (uncovered.length === 0) {
-    debug(`  All libraries covered — allowing`);
+  if (uncovered.length === 0 && degraded.length === 0) {
+    debug("  All libraries covered — allowing");
     return { ok: true };
   }
 
-  return { ok: false, uncovered };
+  return { ok: false, uncovered, degraded };
 }
 
 /**
@@ -199,7 +214,7 @@ function check(toolName, toolInput) {
   if (toolName === "Edit") {
     const editResult = checkEdit(toolInput, filePath);
     if (editResult.ok) return editResult;
-    return formatBlock(toolName, filePath, editResult.uncovered);
+    return formatBlock(toolName, filePath, editResult.uncovered || [], editResult.degraded || []);
   }
 
   // Write: check the full file content
@@ -222,38 +237,54 @@ function check(toolName, toolInput) {
 
   const libResult = checkLibraries(result.libraries);
   if (libResult.ok) return libResult;
-  return formatBlock(toolName, filePath, libResult.uncovered);
+  return formatBlock(toolName, filePath, libResult.uncovered || [], libResult.degraded || []);
 }
 
 /**
- * Format a block response with the reason string.
+ * Format a block response with distinct messages for uncovered vs degraded.
  */
-function formatBlock(toolName, filePath, uncovered) {
-  const libList = uncovered.map(u => {
-    const feats = u.features.length > 0
-      ? ` (using: ${u.features.slice(0, 5).join(", ")})`
-      : "";
-    return `  - ${u.name}${feats}`;
-  }).join("\n");
+function formatBlock(toolName, filePath, uncovered, degraded) {
+  const parts = [];
 
-  // Build specific lookup suggestions for each library
-  const suggestions = uncovered.map(u => {
-    const topFeature = u.features[0] || u.name;
-    return `  1. resolve-library-id(libraryName: "${u.name}", query: "${topFeature}")` +
-      `\n  2. query-docs(libraryId: <from step 1>, query: "${u.features.slice(0, 3).join(", ") || u.name}")`;
-  }).join("\n");
+  if (uncovered.length > 0) {
+    const libList = uncovered.map(u => {
+      const feats = u.features.length > 0
+        ? ` (using: ${u.features.slice(0, 5).join(", ")})`
+        : "";
+      return `  - ${u.name}${feats}`;
+    }).join("\n");
 
-  const reason = [
-    "DOCS FIRST. You're writing code that uses libraries you haven't looked up:",
-    libList,
-    "",
-    "Look up the docs NOW (resolve-library-id alone does NOT count — you must call query-docs):",
-    suggestions,
-  ].join("\n");
+    const suggestions = uncovered.map(u => {
+      const topFeature = u.features[0] || u.name;
+      return `  1. resolve-library-id(libraryName: "${u.name}", query: "${topFeature}")` +
+        `\n  2. query-docs(libraryId: <from step 1>, query: "${u.features.slice(0, 3).join(", ") || u.name}")`;
+    }).join("\n");
 
-  debug(`Blocking ${toolName} on ${filePath}:`, uncovered.map(u => u.name));
+    parts.push(
+      "DOCS FIRST. You're writing code that uses libraries you haven't looked up:",
+      libList,
+      "",
+      "Look up the docs NOW (resolve-library-id alone does NOT count — you must call query-docs):",
+      suggestions,
+    );
+  }
 
-  return { ok: false, reason, uncovered };
+  if (degraded.length > 0) {
+    const degradedList = degraded.map(u => `  - ${u.name}`).join("\n");
+    parts.push(
+      "",
+      "DOCS LOOKUP INCOMPLETE. You called resolve-library-id but query-docs never completed for:",
+      degradedList,
+      "",
+      "Either retry query-docs, or use WebSearch/WebFetch as an alternative doc source.",
+    );
+  }
+
+  const reason = parts.join("\n");
+  const allBlocked = [...uncovered, ...degraded];
+  debug("Blocking " + toolName + " on " + filePath, { uncovered: uncovered.map(u => u.name), degraded: degraded.map(u => u.name) });
+
+  return { ok: false, reason, uncovered: allBlocked };
 }
 
 // --- stdin hook entrypoint ---
@@ -266,6 +297,7 @@ async function main() {
 
   try {
     const hookInput = JSON.parse(raw);
+    setContext({ session_id: hookInput.session_id, hook_event_name: hookInput.hook_event_name, tool_name: hookInput.tool_name });
     const result = check(hookInput.tool_name, hookInput.tool_input || {});
 
     if (result.ok) {
