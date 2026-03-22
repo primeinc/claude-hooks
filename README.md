@@ -127,9 +127,16 @@ claude-hooks/
 
 ## Known Limitations
 
+**Frustration detector:**
 - **Hostile-but-clean language** ("nonsensical lazy approach", "this is garbage") is not detected. Deterministic regex can't distinguish hostile tone from technical descriptions without unacceptable false positive rates.
 - **Varied phrasing** of mild corrections may not match. The MILD patterns cover common phrasings but not all possible wordings.
-- **Plugin cache** does not auto-refresh from source. Bump the version in `marketplace.json` after making changes.
+
+**Bash guards:**
+- **Heredocs and herestrings** (`bash <<< "find ."`, `bash << EOF`) are not parsed. Commands inside heredocs execute unblocked.
+- **Language eval bypasses** (`python -c "os.system('find .')"`, `node -e "execSync('grep')"`, `perl -e "system('find')"`) cannot be caught without interpreting the target language.
+- **Subshell redirect** (`(npm test) 2>/dev/null`) — redirect on the subshell wrapper is not checked.
+
+**Plugin cache** does not auto-refresh from source. Bump the version in `plugin.json` after making changes.
 
 ## Calibration
 
