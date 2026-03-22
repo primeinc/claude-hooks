@@ -133,7 +133,7 @@ claude-hooks/
 
 **Bash guards:**
 - **Heredocs and herestrings** (`bash <<< "find ."`, `bash << EOF`) are not parsed. Commands inside heredocs execute unblocked.
-- **Language eval bypasses** (`python -c "os.system('find .')"`, `node -e "execSync('grep')"`, `perl -e "system('find')"`) cannot be caught without interpreting the target language.
+- **Foreign language eval** (`python -c "os.system('find .')"`, `node -e "execSync('grep')"`) cannot be caught without interpreting the target language. Shell `eval` is caught via transparent prefix handling.
 - **Subshell redirect** (`(npm test) 2>/dev/null`) — redirect on the subshell wrapper is not checked.
 
 **Plugin cache** does not auto-refresh from source. Bump the version in `plugin.json` after making changes.
