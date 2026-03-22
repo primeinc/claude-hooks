@@ -53,13 +53,13 @@ const RULES = [
   // No trailing \b on profanity stems so inflected forms (fucking, shitty) match.
   // Direction markers: you/your/you're, this/that, what the, holy
   {
-    pattern: /\b(your|you're)\b.{0,40}\b(fuck|shit|crap|damn|cunt|ass\b)|\b(fuck|shit|crap|damn|cunt)\w*.{0,20}\b(you|your|you're)\b|\byou\b.{0,10}\b(fuck|shit|crap|damn|cunt|ass\b)/i,
+    pattern: /\b(your|you're)\b.{0,40}\b(fuck|shit|crap|damn|cunt|ass\b)|\b(fuck|shit|cunt)\w*.{0,20}\b(you|your|you're)\b|\byou\b.{0,20}\b(fuck|shit|crap|cunt|ass\b)/i,
     category: "HIGH",
   },
 
   // HIGH: exclamatory profanity — "what the fuck", "holy shit", "that's bullshit", "that shit"
   {
-    pattern: /(what the|holy|oh my|are you)\s+\w*(fuck|shit|crap|damn|hell)|\b(this is|that's|that is) (fuck|shit|crap|bull\s*shit|damn)|\bthat (shit|fuck|crap)\b.{0,10}(doesn|doesn|doesnt|won|isn|not|never|broken|wrong|fail)|\b(bull\s*shit|bullshit|cunt)\b/i,
+    pattern: /(what the|holy|oh my|are you|how the)\s+\w*(fuck|shit|crap|damn|hell)|\b(this is|that's|that is) (fuck|shit|crap|bull\s*shit|damn)|\bthat (shit|fuck|crap)\b.{0,10}(doesn|doesn|doesnt|won|isn|not|never|broken|wrong|fail)|\b(bull\s*shit|bullshit|cunt)\b/i,
     category: "HIGH",
   },
 
