@@ -1,8 +1,13 @@
 {
-  "name": "claude-hooks",
-  "version": "2.1.0",
+  "name": "@primeinc/claude-hooks",
+  "version": "2.2.0",
   "private": true,
   "description": "Deterministic frustration detection + AST-based bash command guards for Claude Code",
+  "author": "primeinc",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/primeinc/claude-hooks"
+  },
   "engines": {
     "node": ">=14.0.0"
   },

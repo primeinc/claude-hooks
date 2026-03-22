@@ -1,8 +1,8 @@
 {
   "name": "claude-hooks",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Deterministic frustration detection + AST-based bash command guards for Claude Code. Catches profanity, caps anger, circular retries, scope drift, and mild corrections. Blocks find, grep, truncation, test output piping, and package runners.",
   "author": {
-    "name": "will"
+    "name": "primeinc"
   }
 }

@@ -4,7 +4,7 @@
     "description": "Deterministic frustration detection + AST-based bash command guards for Claude Code"
   },
   "owner": {
-    "name": "will"
+    "name": "primeinc"
   },
   "plugins": [
     {
