@@ -259,7 +259,7 @@ process.stdin.on("end", () => {
 
   const result = evaluate(cmd);
   if (result) {
-    process.stderr.write(JSON.stringify(result) + "\n");
+    process.stderr.write(result.reason + "\n");
     process.exit(2);
   }
   process.exit(0);
