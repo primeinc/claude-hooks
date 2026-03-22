@@ -44,7 +44,7 @@ const MESSAGES = {
 
 // ── Patterns ────────────────────────────────────────────────────────
 //
-// Each rule: { pattern: RegExp, category: string, maxLength?: number }
+// Each rule: { pattern: RegExp, category: string, maxLength?: number, exclude?: RegExp }
 // Rules are evaluated in order. First match wins.
 // maxLength constrains the rule to short messages only (reduces false positives).
 
@@ -52,23 +52,26 @@ const RULES = [
   // HIGH: profanity (any word form)
   // No trailing \b on longer stems so "fucking", "shitty", "crappy", "damned" all match.
   // \bass\b keeps trailing boundary to avoid "assign", "assert", "class".
+  // Common typos: "fukc", "fuk", "fcuk", "sht" from rage-typing.
   {
-    pattern: /\b(fuck|shit|bullshit|bull\s*shit|damn|crap)|\bass\b/i,
+    pattern: /\b(fuck|fuck|fukc|fuk|fcuk|shit|sht|bullshit|bull\s*shit|damn|crap|cunt)|\bass\b/i,
     category: "HIGH",
   },
 
-  // HIGH: short angry acronyms (WTF, FFS, JFC)
+  // HIGH: short angry acronyms (WTF, FFS, JFC, OMFG)
   {
-    pattern: /\b(WTF|FFS|JFC)\b/,
+    pattern: /\b(WTF|FFS|JFC|OMFG)\b/i,
     category: "HIGH",
-    maxLength: 80,
+    maxLength: 120,
   },
 
   // HIGH: ALL CAPS short messages (3+ consecutive capitalized words)
+  // Excludes messages ending with ? — those are caps-lock questions, not rage.
   {
     pattern: /(\b[A-Z]{2,}\b\s+){2,}\b[A-Z]{2,}\b/,
     category: "HIGH",
     maxLength: 80,
+    exclude: /\?\s*$/,
   },
 
   // HIGH: standalone angry words
@@ -112,7 +115,7 @@ const RULES = [
 
   // MILD: polite corrections (short messages only)
   {
-    pattern: /\b(sorry I was.?t clear|is that (really )?best practice|are you sure|that.?s not (right|correct)|wrong file|check the docs|doesn.?t work on)\b/i,
+    pattern: /\b(sorry I was.?t clear|is that (really )?best practice|are you sure|that.?s not (right|correct)|wrong file|check the docs|doesn.?t work on|you misunderstood)\b/i,
     category: "MILD",
     maxLength: 200,
   },
@@ -127,6 +130,7 @@ function classify(prompt) {
 
   for (const rule of RULES) {
     if (rule.maxLength && length >= rule.maxLength) continue;
+    if (rule.exclude && rule.exclude.test(prompt)) continue;
     if (rule.pattern.test(prompt)) return rule.category;
   }
 

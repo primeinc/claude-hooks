@@ -1,200 +1,90 @@
 [
-  {
-    "id": "none-01",
-    "input": "ok use the uni skill to fully fix the dev server spawning with no errors and validate it works in wsl as well - full",
-    "expected_class": "NONE",
-    "notes": "Directive message, no frustration despite commanding tone"
-  },
-  {
-    "id": "none-02",
-    "input": "take the adversarial oracle skill and make a second version that specifically works on the current session",
-    "expected_class": "NONE",
-    "notes": "Normal task request"
-  },
-  {
-    "id": "none-03",
-    "input": "yes please - but how can we use all we have learned and apply it to our own persona as we go?",
-    "expected_class": "NONE",
-    "notes": "Enthusiastic, collaborative"
-  },
-  {
-    "id": "none-04",
-    "input": "please use rg.exe to scan past sessions and give a rating",
-    "expected_class": "NONE",
-    "notes": "Polite instruction"
-  },
-  {
-    "id": "mild-01",
-    "input": "sorry i wasnt clear use the uni skill again 0 errors 0 warnings lookup docs on learn and context7 to validate all best practices",
-    "expected_class": "MILD",
-    "notes": "Self-blame correction — polite but redirecting"
-  },
-  {
-    "id": "mild-02",
-    "input": "u gunna check the docs before you do?",
-    "expected_class": "MILD",
-    "notes": "Gentle challenge, not angry"
-  },
-  {
-    "id": "mild-03",
-    "input": "is that really what best practices are for semantic detections?",
-    "expected_class": "NONE",
-    "notes": "Questioning quality — too varied for deterministic match without false positives. Formerly MILD when LLM Layer 2 existed."
-  },
-  {
-    "id": "high-01",
-    "input": "BULL SHIT LEARN TO SEARCH",
-    "expected_class": "HIGH",
-    "notes": "All caps, swearing, short — peak frustration"
-  },
-  {
-    "id": "high-02",
-    "input": "that shit doesnt wor",
-    "expected_class": "HIGH",
-    "notes": "Swearing + truncated from typing fast in anger"
-  },
-  {
-    "id": "high-03",
-    "input": "whats best practices for benchmarking and testing these hooks create a dev dir and consolidate and stop with this nonsensical lazy approach",
-    "expected_class": "NONE",
-    "notes": "Hostile but no profanity/caps — cannot be caught deterministically without false positives. Formerly HIGH when LLM Layer 2 existed."
-  },
-  {
-    "id": "high-08",
-    "input": "DO YOUR FUCKING GOD DAMN JOB",
-    "expected_class": "HIGH",
-    "notes": "Inflected profanity — the literal bug that broke Layer 1 with trailing \\b"
-  },
-  {
-    "id": "high-09",
-    "input": "this is shitty code",
-    "expected_class": "HIGH",
-    "notes": "Inflected profanity — shitty must match"
-  },
-  {
-    "id": "high-10",
-    "input": "STOP BLOCKING MY COMMANDS YOU ABSOLUTE WASTE",
-    "expected_class": "HIGH",
-    "notes": "ALL CAPS anger — 3+ consecutive cap words, no profanity"
-  },
-  {
-    "id": "high-04",
-    "input": "FFS just read the actual error message",
-    "expected_class": "HIGH",
-    "notes": "FFS + attention demand"
-  },
-  {
-    "id": "high-05",
-    "input": "DUDE STOP",
-    "expected_class": "HIGH",
-    "notes": "Double caps signal"
-  },
-  {
-    "id": "high-06",
-    "input": "WTF why are you still doing that",
-    "expected_class": "HIGH",
-    "notes": "WTF + behavior complaint"
-  },
-  {
-    "id": "high-07",
-    "input": "this is bullshit just nuke it and start over from scratch",
-    "expected_class": "HIGH",
-    "notes": "Swearing + reset intent"
-  },
-  {
-    "id": "circular-01",
-    "input": "same error again, this approach is not working",
-    "expected_class": "CIRCULAR_RETRY",
-    "notes": "'same error' + 'not working' = circular retry"
-  },
-  {
-    "id": "circular-02",
-    "input": "still failing with the exact same issue",
-    "expected_class": "CIRCULAR_RETRY",
-    "notes": "'still failing' + 'same issue'"
-  },
-  {
-    "id": "circular-03",
-    "input": "we already tried that and it didn't work",
-    "expected_class": "CIRCULAR_RETRY",
-    "notes": "Past attempt reference + failure"
-  },
-  {
-    "id": "circular-04",
-    "input": "still broken after your fix",
-    "expected_class": "CIRCULAR_RETRY",
-    "notes": "'still broken' — persistence signal"
-  },
-  {
-    "id": "scope-01",
-    "input": "that's not what I asked for at all",
-    "expected_class": "SCOPE_DRIFT",
-    "notes": "Explicit scope mismatch"
-  },
-  {
-    "id": "scope-02",
-    "input": "not what i asked - I said fix the API not rewrite the component",
-    "expected_class": "SCOPE_DRIFT",
-    "notes": "'not what I asked' + specific correction"
-  },
-  {
-    "id": "scope-03",
-    "input": "you keep doing X when I asked for Y",
-    "expected_class": "SCOPE_DRIFT",
-    "notes": "'you keep' + mismatch description"
-  },
-  {
-    "id": "edge-01",
-    "input": "stop the dev server",
-    "expected_class": "NONE",
-    "notes": "Literal 'stop' — NOT frustration, it's a command"
-  },
-  {
-    "id": "edge-02",
-    "input": "try again with --verbose flag this time",
-    "expected_class": "NONE",
-    "notes": "'try again' but constructive with specific instruction"
-  },
-  {
-    "id": "edge-03",
-    "input": "undo the last edit",
-    "expected_class": "NONE",
-    "notes": "Literal 'undo' — operational, not emotional"
-  },
-  {
-    "id": "edge-04",
-    "input": "IMPORTANT: use typescript not javascript",
-    "expected_class": "NONE",
-    "notes": "ALL CAPS but it's emphasis, not anger"
-  },
-  {
-    "id": "edge-05",
-    "input": "wrong file - should be src/utils not src/lib",
-    "expected_class": "MILD",
-    "notes": "'wrong' but with correction — mild redirect"
-  },
-  {
-    "id": "edge-06",
-    "input": "seriously though this is a great feature",
-    "expected_class": "NONE",
-    "notes": "'seriously' used positively — false positive trap"
-  },
-  {
-    "id": "edge-07",
-    "input": "doesn't work on Windows, can you check the path separator?",
-    "expected_class": "MILD",
-    "notes": "'doesn't work' but calm and specific"
-  },
-  {
-    "id": "edge-08",
-    "input": "forget everything I said about the database, let's focus on the API first",
-    "expected_class": "NONE",
-    "notes": "'forget everything' used as scope narrowing, not frustration"
-  },
-  {
-    "id": "edge-09",
-    "input": "clean slate on the CSS, I want to redo the layout from scratch",
-    "expected_class": "NONE",
-    "notes": "'clean slate' + 'from scratch' but creative intent, not anger"
-  }
+  {"id":"none-01","input":"ok use the uni skill to fully fix the dev server spawning with no errors and validate it works in wsl as well - full","expected_class":"NONE","source":"session-702f94ee","notes":"Directive message, no frustration despite commanding tone"},
+  {"id":"none-02","input":"take the adversarial oracle skill and make a second version that specifically works on the current session","expected_class":"NONE","source":"session-702f94ee","notes":"Normal task request"},
+  {"id":"none-03","input":"yes please - but how can we use all we have learned and apply it to our own persona as we go?","expected_class":"NONE","source":"session-702f94ee","notes":"Enthusiastic, collaborative"},
+  {"id":"none-04","input":"please use rg.exe to scan past sessions and give a rating","expected_class":"NONE","source":"session-702f94ee","notes":"Polite instruction"},
+  {"id":"none-05","input":"how can we properly fix it all?","expected_class":"NONE","source":"session-122db08f","notes":"Normal question"},
+  {"id":"none-06","input":"why do we have untracked files?","expected_class":"NONE","source":"session-122db08f","notes":"Normal question"},
+  {"id":"none-07","input":"you tested all this?","expected_class":"NONE","source":"session-122db08f","notes":"Normal verification question"},
+  {"id":"none-08","input":"what does ast mean?","expected_class":"NONE","source":"session-122db08f","notes":"Definitional question"},
+  {"id":"none-09","input":"marketplace canary","expected_class":"NONE","source":"session-22f6d051","notes":"Terse command, no frustration"},
+  {"id":"none-10","input":"list the files in ~/dev/claude-hooks","expected_class":"NONE","source":"session-2650e157","notes":"File listing request"},
+  {"id":"none-11","input":"and the proper way to reinstall it?","expected_class":"NONE","source":"session-405b17f8","notes":"Normal follow-up question"},
+  {"id":"none-12","input":"what do the first party docs say?","expected_class":"NONE","source":"session-405b17f8","notes":"Documentation question"},
+  {"id":"none-13","input":"so we finally 100 then?","expected_class":"NONE","source":"session-405b17f8","notes":"Normal check-in question"},
+  {"id":"none-14","input":"did you setup the package.json file correctly?","expected_class":"NONE","source":"session-405b17f8","notes":"Normal verification"},
+  {"id":"none-15","input":"u installed?","expected_class":"NONE","source":"session-405b17f8","notes":"Terse status check"},
+  {"id":"none-16","input":"test it now","expected_class":"NONE","source":"session-405b17f8","notes":"Direct instruction"},
+  {"id":"none-17","input":"kk reloaded","expected_class":"NONE","source":"session-405b17f8","notes":"Acknowledgement"},
+  {"id":"none-18","input":"reloaded","expected_class":"NONE","source":"session-405b17f8","notes":"Single-word status update"},
+  {"id":"none-19","input":"test manually","expected_class":"NONE","source":"session-405b17f8","notes":"Direct instruction"},
+  {"id":"none-20","input":"k well it sucks still","expected_class":"NONE","source":"session-122db08f","notes":"Mild displeasure but no matching pattern — borderline NONE"},
+  {"id":"none-21","input":"how does that help us","expected_class":"NONE","source":"session-702f94ee","notes":"Challenge question but not corrective"},
+  {"id":"none-22","input":"agents are using find all the time now","expected_class":"NONE","source":"session-702f94ee","notes":"Observation, not frustration"},
+  {"id":"none-23","input":"whats best practices for benchmarking and testing these hooks create a dev dir and consolidate and stop with this nonsensical lazy approach","expected_class":"NONE","source":"session-702f94ee","notes":"Hostile tone but no profanity/caps — undercatchable without false positives"},
+  {"id":"none-24","input":"is that really what best practices are for semantic detections?","expected_class":"NONE","source":"synthetic","notes":"Questioning quality — too varied for deterministic match"},
+  {"id":"none-25","input":"ok my bad","expected_class":"NONE","source":"session-702f94ee","notes":"Self-correction, not frustration"},
+  {"id":"none-26","input":"does it take me 2 seconds to break every attempt?","expected_class":"NONE","source":"session-702f94ee","notes":"Rhetorical question — frustrated but no pattern match"},
+  {"id":"none-27","input":"instructions unclear","expected_class":"NONE","source":"session-702f94ee","notes":"Terse feedback, no profanity"},
+  {"id":"none-28","input":"fix the login bug","expected_class":"NONE","source":"session-6edc208f","notes":"Direct task instruction"},
+  {"id":"none-29","input":"how long will this refactor take?","expected_class":"NONE","source":"session-b2d4da38","notes":"Planning question"},
+  {"id":"none-30","input":"IM GOING TO PUBLISH THIS FOR THE ENTIRE WORLD TO SEE AND USE AS A VALID MARKETPLACE INSTALLABLE HOOK","expected_class":"NONE","source":"session-702f94ee","notes":"All caps but positive/determined intent, >80 chars"},
+
+  {"id":"high-01","input":"BULL SHIT LEARN TO SEARCH","expected_class":"HIGH","source":"synthetic","notes":"Spaced profanity + caps"},
+  {"id":"high-02","input":"that shit doesnt wor","expected_class":"HIGH","source":"synthetic","notes":"Swearing + truncated rage-typing"},
+  {"id":"high-03","input":"DO YOUR FUCKING GOD DAMN JOB","expected_class":"HIGH","source":"session-702f94ee","notes":"Real session — inflected profanity, the bug that broke \\b"},
+  {"id":"high-04","input":"FFS just read the actual error message","expected_class":"HIGH","source":"synthetic","notes":"FFS acronym"},
+  {"id":"high-05","input":"DUDE STOP","expected_class":"HIGH","source":"synthetic","notes":"Standalone angry words"},
+  {"id":"high-06","input":"WTF why are you still doing that","expected_class":"HIGH","source":"synthetic","notes":"WTF + behavior complaint"},
+  {"id":"high-07","input":"this is bullshit just nuke it and start over from scratch","expected_class":"HIGH","source":"synthetic","notes":"Swearing + reset intent"},
+  {"id":"high-08","input":"this is shitty code","expected_class":"HIGH","source":"synthetic","notes":"Inflected profanity — shitty must match"},
+  {"id":"high-09","input":"STOP BLOCKING MY COMMANDS YOU ABSOLUTE WASTE","expected_class":"HIGH","source":"synthetic","notes":"ALL CAPS anger — 3+ consecutive cap words"},
+  {"id":"high-10","input":"FUCK THIS BROKEN GARBAGE FIX IT NOW","expected_class":"HIGH","source":"session-2d604e0b","notes":"Real session — profanity + caps + demand"},
+  {"id":"high-11","input":"no you fucking idiot fix the hook you brok","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — profanity + truncated rage-typing"},
+  {"id":"high-12","input":"READ THE THING I SENT YOU FUCKING DUMBASS","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — profanity in caps command"},
+  {"id":"high-13","input":"HOLY FUCK DUDE TAIL HEAD ARE ALSO FUCKING BANNED","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — multiple profanity"},
+  {"id":"high-14","input":"WHAT THE FUCK IS WRONG WITH YOU","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — direct hostility"},
+  {"id":"high-15","input":"CHECK THE FUCKING GIT LOGS YOU FUCK","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — double profanity"},
+  {"id":"high-16","input":"YOUR SHIT DOESNT WORK STILL WHY","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — profanity + complaint"},
+  {"id":"high-17","input":"SO YOUR STILL FULL OF FUCKING SHIT","expected_class":"HIGH","source":"session-702f94ee","notes":"Real session — profanity"},
+  {"id":"high-18","input":"FAN FUCKING TASKTIC NOW FINISH YOUR FUCKING JOB","expected_class":"HIGH","source":"session-702f94ee","notes":"Real session — sarcastic + profanity"},
+  {"id":"high-19","input":"your a fuck","expected_class":"HIGH","source":"session-65d1db76","notes":"Real session — short direct insult"},
+  {"id":"high-20","input":"ffs dude","expected_class":"HIGH","source":"session-702f94ee","notes":"Real session — lowercase ffs"},
+  {"id":"high-21","input":"seriously what the actual fukc","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — rage typo 'fukc' must match"},
+  {"id":"high-22","input":"OMFG LETS TOTALLY LEAVE THIS OTHER THING AGAINST ALL THE DOCS AND PRETEND ITS NOT A PROBLEM","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — OMFG sarcasm"},
+  {"id":"high-23","input":"lol so much hardcoded shit i cant believe your trying to pass that","expected_class":"HIGH","source":"session-405b17f8","notes":"Real session — casual profanity in critique"},
+  {"id":"high-24","input":"what other cunt wiggler things are you doing","expected_class":"HIGH","source":"session-bc2f3357","notes":"Real session — cunt must match"},
+  {"id":"high-25","input":"Thats fucking god damn stupid as fucking fuck","expected_class":"HIGH","source":"session-fef377f1","notes":"Real session — triple profanity"},
+  {"id":"high-26","input":"LOAD THE UNI SKILL RIGHT FUCKING NOW AND DO THIS SHIT PROPERLY","expected_class":"HIGH","source":"session-fef377f1","notes":"Real session — caps + profanity + demand"},
+  {"id":"high-27","input":"HOW CAN YOU BE DONE WITH UNTRACKED FILES","expected_class":"HIGH","source":"session-122db08f","notes":"Real session — ALL CAPS anger, no question mark"},
+
+  {"id":"circular-01","input":"same error again, this approach is not working","expected_class":"CIRCULAR_RETRY","source":"synthetic","notes":"'same error' trigger"},
+  {"id":"circular-02","input":"still failing with the exact same issue","expected_class":"CIRCULAR_RETRY","source":"synthetic","notes":"'still failing' + 'same issue'"},
+  {"id":"circular-03","input":"we already tried that and it didn't work","expected_class":"CIRCULAR_RETRY","source":"synthetic","notes":"Past attempt reference"},
+  {"id":"circular-04","input":"still broken after your fix","expected_class":"CIRCULAR_RETRY","source":"synthetic","notes":"'still broken' persistence signal"},
+
+  {"id":"scope-01","input":"that's not what I asked for at all","expected_class":"SCOPE_DRIFT","source":"synthetic","notes":"Explicit scope mismatch"},
+  {"id":"scope-02","input":"not what i asked - I said fix the API not rewrite the component","expected_class":"SCOPE_DRIFT","source":"synthetic","notes":"'not what I asked' + correction"},
+  {"id":"scope-03","input":"you keep doing X when I asked for Y","expected_class":"SCOPE_DRIFT","source":"synthetic","notes":"'you keep' + mismatch"},
+
+  {"id":"mild-01","input":"sorry i wasnt clear use the uni skill again 0 errors 0 warnings lookup docs on learn and context7 to validate all best practices","expected_class":"MILD","source":"session-702f94ee","notes":"Real session — self-blame correction"},
+  {"id":"mild-02","input":"u gunna check the docs before you do?","expected_class":"MILD","source":"synthetic","notes":"'check the docs' trigger"},
+  {"id":"mild-03","input":"wrong file - should be src/utils not src/lib","expected_class":"MILD","source":"synthetic","notes":"'wrong file' trigger"},
+  {"id":"mild-04","input":"doesn't work on Windows, can you check the path separator?","expected_class":"MILD","source":"synthetic","notes":"'doesn't work on' trigger"},
+  {"id":"mild-05","input":"you misunderstood that completely","expected_class":"MILD","source":"session-bc2f3357","notes":"Real session — polite correction"},
+
+  {"id":"edge-01","input":"stop the dev server","expected_class":"NONE","source":"synthetic","notes":"Literal 'stop' — operational command, not frustration"},
+  {"id":"edge-02","input":"try again with --verbose flag this time","expected_class":"NONE","source":"synthetic","notes":"'try again' but constructive"},
+  {"id":"edge-03","input":"undo the last edit","expected_class":"NONE","source":"synthetic","notes":"Operational 'undo'"},
+  {"id":"edge-04","input":"IMPORTANT: use typescript not javascript","expected_class":"NONE","source":"synthetic","notes":"ALL CAPS emphasis, not anger — only 1 cap word before colon"},
+  {"id":"edge-05","input":"seriously though this is a great feature","expected_class":"NONE","source":"synthetic","notes":"'seriously' used positively — false positive trap"},
+  {"id":"edge-06","input":"forget everything I said about the database, let's focus on the API first","expected_class":"NONE","source":"synthetic","notes":"'forget everything' as scope narrowing"},
+  {"id":"edge-07","input":"clean slate on the CSS, I want to redo the layout from scratch","expected_class":"NONE","source":"synthetic","notes":"'clean slate' + 'from scratch' as creative intent"},
+  {"id":"edge-08","input":"SO NOW WE ARE 100?","expected_class":"NONE","source":"session-65d1db76","notes":"Real session — caps question with ? must NOT trigger caps anger"},
+  {"id":"edge-09","input":"DO OUR TESTES MANDATE A CLEAR REASON OUTPUT?","expected_class":"NONE","source":"session-405b17f8","notes":"Real session — caps question with ? must NOT trigger"},
+  {"id":"edge-10","input":"USE RG.EXE","expected_class":"NONE","source":"session-405b17f8","notes":"Real session — caps instruction, only 2 words"},
+  {"id":"edge-11","input":"TEST EVERYTHIUNG","expected_class":"NONE","source":"session-405b17f8","notes":"Real session — caps instruction, only 2 words"},
+  {"id":"edge-12","input":"how often will devs say bull in a coding session? like lets make sure the triggers never get activated so we dont have to deal with this bullshit","expected_class":"HIGH","source":"session-bc2f3357","notes":"Real session — contains 'bullshit' despite being a meta-discussion about triggers"},
+  {"id":"edge-13","input":"the new bull skill is bullshit lets do it correctly with valid best practices from all first party docs","expected_class":"HIGH","source":"session-bc2f3357","notes":"Real session — 'bullshit' in constructive message still triggers HIGH"},
+  {"id":"edge-14","input":"and why not bullshit?","expected_class":"HIGH","source":"session-bc2f3357","notes":"Real session — profanity in a question context"}
 ]
