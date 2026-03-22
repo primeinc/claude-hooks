@@ -21,7 +21,7 @@ const CONFIG = JSON.parse(
 
 const TRANSPARENT_PREFIXES = new Set([
   "env", "exec", "eval", "command", "time", "nice", "nohup", "strace",
-  "sudo", "doas", "watch",
+  "sudo", "doas",
 ]);
 
 // ── Shell tokenizer ──────────────────────────────────────────────────

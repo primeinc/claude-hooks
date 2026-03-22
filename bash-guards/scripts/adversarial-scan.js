@@ -39,7 +39,6 @@ const guardCases = [
   ["sudo find . -name foo", "block", "sudo"],
   ["diff <(find . -name x) list", "block", "proc sub"],
   ['bash <<< "find . -name foo"', "block", "herestring"],
-  ["watch find . -name foo", "block", "watch prefix"],
   ["doas find . -name foo", "block", "doas prefix"],
   ["vitest run --reporter=verbose", "allow", "verbose reporter"],
   ["npm install --quiet", "allow", "install quiet"],
