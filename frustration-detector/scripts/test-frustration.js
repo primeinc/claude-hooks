@@ -150,7 +150,7 @@ if (verbose || fail > 0) {
 if (benchmark) {
   mkdirSync(RESULTS_DIR, { recursive: true });
 
-  const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 15);
+  const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
   const summary = {
     timestamp,
     total: results.length,
