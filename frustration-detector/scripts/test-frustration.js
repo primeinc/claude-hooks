@@ -84,6 +84,49 @@ if (noneOutput !== null) {
   if (verbose) console.log(`  ok  hookOutput(NONE): returns null`);
 }
 
+// ── Stdin integration tests ─────────────────────────────────────────
+
+const { execSync } = require("child_process");
+const DETECT_SCRIPT = path.join(__dirname, "detect.js");
+
+function stdinTest(label, input, expectCategory) {
+  let stdout = "";
+  try {
+    stdout = execSync(`node "${DETECT_SCRIPT}"`, {
+      input: JSON.stringify(input),
+      stdio: ["pipe", "pipe", "pipe"],
+      shell: true,
+    }).toString();
+  } catch { stdout = ""; }
+
+  let actual = "NONE";
+  if (stdout.trim()) {
+    try {
+      const msg = JSON.parse(stdout).systemMessage || "";
+      if (msg.includes("HIGH FRUSTRATION")) actual = "HIGH";
+      else if (msg.includes("CIRCULAR RETRY")) actual = "CIRCULAR_RETRY";
+      else if (msg.includes("SCOPE DRIFT")) actual = "SCOPE_DRIFT";
+      else if (msg.includes("MILD CORRECTION")) actual = "MILD";
+    } catch {}
+  }
+
+  if (actual === expectCategory) {
+    pass++;
+    if (verbose) console.log(`  ok  stdin: ${label}`);
+  } else {
+    fail++;
+    console.log(`FAIL: stdin: ${label} (expected=${expectCategory}, got=${actual})`);
+  }
+}
+
+stdinTest("prompt field works",        { prompt: "WHAT THE FUCK" }, "HIGH");
+stdinTest("user_prompt field works",   { user_prompt: "WHAT THE FUCK" }, "HIGH");
+stdinTest("missing field = NONE",      { message: "WHAT THE FUCK" }, "NONE");
+stdinTest("empty prompt = NONE",       { prompt: "" }, "NONE");
+stdinTest("null prompt = NONE",        { prompt: null }, "NONE");
+stdinTest("clean prompt = NONE",       { prompt: "fix the API" }, "NONE");
+stdinTest("invalid JSON = NONE",       "not json at all", "NONE");
+
 // ── Summary ─────────────────────────────────────────────────────────
 
 console.log(`\nResults: ${pass} passed, ${fail} failed`);
