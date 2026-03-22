@@ -461,9 +461,19 @@ function hasTsconfigStrict(cwd) {
     try {
       const content = readFileSync(join(cwd, name), "utf8");
       foundAny = true;
-      // Parse JSON (strip comments for jsonc support)
-      const stripped = content.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
-      const parsed = JSON.parse(stripped);
+      // Try plain JSON first, then strip comments if that fails.
+      // Naive comment stripping destroys strings containing /* or // (e.g., "@/*" in paths).
+      let parsed;
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        // Strip single-line comments only outside strings (line must start with //)
+        const stripped = content
+          .split("\n")
+          .map(line => line.replace(/^\s*\/\/.*$/, ""))
+          .join("\n");
+        parsed = JSON.parse(stripped);
+      }
       if (parsed.compilerOptions?.strict === true) return true;
     } catch { /* not found or parse error */ }
   }
