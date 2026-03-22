@@ -103,14 +103,14 @@ const RULES = [
   {
     pattern: /\b(not what I asked|that's not what I (asked|meant|said)|I said .+ not )|you keep (doing|changing|adding)\b/i,
     category: "SCOPE_DRIFT",
-    maxLength: 120,
+    maxLength: 200,
   },
 
   // SCOPE DRIFT: explicit mismatch
   {
     pattern: /\b(I asked (for|you to)|that's not the|wrong (problem|thing|issue))\b/i,
     category: "SCOPE_DRIFT",
-    maxLength: 120,
+    maxLength: 200,
   },
 
   // MILD: polite corrections (short messages only)

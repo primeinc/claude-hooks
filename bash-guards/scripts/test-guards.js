@@ -295,6 +295,7 @@ checkCwd("allow", "git status unaffected",            "git status", badLint);
 checkCwd("block", "yarn lint missing config",         "yarn lint", badLint);
 checkCwd("block", "pnpm run lint missing config",     "pnpm run lint", badLint);
 checkCwd("allow", "npm test not checked",             "npm test", badLint);
+checkCwd("block", "lint first in chain",              "npm run lint && npm run build", badLint);
 
 // Cleanup
 rmSync(TMP, { recursive: true, force: true });

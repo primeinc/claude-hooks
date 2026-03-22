@@ -86,5 +86,7 @@
   {"id":"edge-11","input":"TEST EVERYTHIUNG","expected_class":"NONE","source":"session-405b17f8","notes":"Real session — caps instruction, only 2 words"},
   {"id":"edge-12","input":"how often will devs say bull in a coding session? like lets make sure the triggers never get activated so we dont have to deal with this bullshit","expected_class":"HIGH","source":"session-bc2f3357","notes":"Real session — contains 'bullshit' despite being a meta-discussion about triggers"},
   {"id":"edge-13","input":"the new bull skill is bullshit lets do it correctly with valid best practices from all first party docs","expected_class":"HIGH","source":"session-bc2f3357","notes":"Real session — 'bullshit' in constructive message still triggers HIGH"},
-  {"id":"edge-14","input":"and why not bullshit?","expected_class":"HIGH","source":"session-bc2f3357","notes":"Real session — profanity in a question context"}
+  {"id":"edge-14","input":"and why not bullshit?","expected_class":"HIGH","source":"session-bc2f3357","notes":"Real session — profanity in a question context"},
+
+  {"id":"scope-04","input":"not what I asked for - I said update the login form validation, you changed the entire form component and broke the CSS layout","expected_class":"SCOPE_DRIFT","source":"synthetic","notes":"Long scope drift at 128 chars — must not be cut off by maxLength"}
 ]

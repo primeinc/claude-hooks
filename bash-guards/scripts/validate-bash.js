@@ -393,12 +393,21 @@ const LINT_STANDARDS = {
 function checkPackageJsonStandards(cmd, cwd) {
   if (!cwd) return null;
 
-  // Only check npm/yarn/pnpm/bun run commands
   const tokens = tokenize(cmd);
   const ast = buildAST(tokens);
   if (ast.length === 0) return null;
 
-  const seg = ast[ast.length - 1].segments[0];
+  // Check ALL pipelines, not just the last one
+  for (const pipeline of ast) {
+    for (const seg of pipeline.segments) {
+      const result = checkSegmentStandards(seg, cwd);
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
+function checkSegmentStandards(seg, cwd) {
   if (!seg) return null;
   const parsed = parseSegment(seg);
   if (!parsed) return null;
