@@ -95,10 +95,11 @@ const RULES = [
     maxLength: 120,
   },
 
-  // HIGH: ALL CAPS short messages (3+ consecutive capitalized words)
-  // Excludes messages ending with ? — those are caps-lock questions, not rage.
+  // HIGH: ALL CAPS short messages (5+ consecutive capitalized words)
+  // 3-4 cap words are usually instructions ("GET THE DOCS", "STOP CONDITION NOT MET")
+  // 5+ is almost always rage. Excludes messages ending with ? (caps-lock questions).
   {
-    pattern: /(\b[A-Z]{2,}\b\s+){2,}\b[A-Z]{2,}\b/,
+    pattern: /(\b[A-Z]{2,}\b\s+){4,}\b[A-Z]{2,}\b/,
     category: "HIGH",
     maxLength: 80,
     exclude: /\?\s*$/,

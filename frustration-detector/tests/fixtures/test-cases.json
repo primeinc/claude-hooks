@@ -128,6 +128,11 @@
   {"id":"real-circular-07","input":"what else is still wrong?","expected_class":"CIRCULAR_RETRY","source":"session-mined-miller","notes":"Real session — 'still wrong' persistence"},
   {"id":"real-circular-08","input":"this doesnt work","expected_class":"CIRCULAR_RETRY","source":"session-mined","notes":"Real session — 'this doesnt work' failure report"},
   {"id":"real-circular-09","input":"it doesnt work","expected_class":"CIRCULAR_RETRY","source":"session-mined","notes":"Real session — 'it doesnt work' failure report"},
+
+  {"id":"caps-instr-01","input":"GET THE DOCS","expected_class":"NONE","source":"session-mined","notes":"ALL CAPS instruction, not rage — 3 words below 5-word threshold"},
+  {"id":"caps-instr-02","input":"DELETE IT ALL","expected_class":"NONE","source":"session-mined","notes":"ALL CAPS instruction — 3 words"},
+  {"id":"caps-instr-03","input":"STOP CONDITION NOT MET","expected_class":"NONE","source":"session-mined","notes":"ALL CAPS status report — 4 words"},
+  {"id":"caps-instr-04","input":"LOAD THE SKILL NOW","expected_class":"NONE","source":"session-mined","notes":"ALL CAPS instruction — 4 words"},
   {"id":"real-none-31","input":"a+ for exactly what i asked for, maybe we change it to be better formated and have better examples","expected_class":"NONE","source":"session-mined-miller","notes":"Real session — positive feedback with 'I asked for' in compliment context"},
 
   {"id":"multi-01","input":"damn that config is crappy","expected_class":"NONE","source":"synthetic","notes":"damn+crap together is casual, not rage"},
