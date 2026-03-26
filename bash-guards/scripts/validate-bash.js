@@ -630,7 +630,7 @@ process.stdin.on("end", () => {
     bashLog.error("Malformed JSON stdin", { error: e.message, inputPreview: input.slice(0, 200) });
     const output = JSON.stringify({
       hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "BASH GUARD ERROR: Could not parse hook input. Blocking as precaution." },
-      systemMessage: "BASH GUARD ERROR: Could not parse hook input. Blocking as precaution.",
+      systemMessage: "BASH GUARD ERROR: Could not parse hook input. Blocking as precaution. Try running your command again. If this persists, check that the hook runner is sending valid JSON to stdin.",
     });
     process.stdout.write(output + "\n");
     process.exit(0);

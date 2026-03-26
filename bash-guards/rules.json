@@ -34,7 +34,7 @@
       "type": "banned-command",
       "commands": ["npx", "bunx", "pnpx"],
       "exempt_subcommands": ["skills"],
-      "message": "Package runners ({cmd}) are banned. Do not run arbitrary packages."
+      "message": "Package runners ({cmd}) are banned. Install the package as a project dependency (npm install) and run it via an npm script in package.json instead."
     },
     {
       "id": "no-package-runner-dlx",
@@ -42,7 +42,7 @@
       "type": "banned-subcommand",
       "commands": ["yarn", "pnpm"],
       "subcommands": ["dlx"],
-      "message": "Package runners ({cmd} {sub}) are banned. Do not run arbitrary packages."
+      "message": "Package runners ({cmd} {sub}) are banned. Install the package as a project dependency and run it via an npm script in package.json instead."
     },
     {
       "id": "no-package-runner-exec",
@@ -50,7 +50,7 @@
       "type": "banned-subcommand",
       "commands": ["npm", "yarn", "pnpm"],
       "subcommands": ["exec"],
-      "message": "Package runners ({cmd} {sub}) are banned. Do not run arbitrary packages."
+      "message": "Package runners ({cmd} {sub}) are banned. Install the package as a project dependency and run it via an npm script in package.json instead."
     },
     {
       "id": "no-node-modules-bin",
