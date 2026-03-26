@@ -321,6 +321,7 @@ async function main() {
       // Block: PreToolUse contract — permissionDecision + systemMessage
       const output = JSON.stringify({
         hookSpecificOutput: {
+          hookEventName: "PreToolUse",
           permissionDecision: "deny",
         },
         systemMessage: result.reason,
