@@ -219,19 +219,6 @@ function hasLookup(library) {
   return { found: false, lookups: [] };
 }
 
-function hasFeatureLookup(library, feature) {
-  const result = hasLookup(library);
-  if (!result.found) return result;
-  const normalizedFeature = feature.toLowerCase().split(".").pop();
-  const featureMatches = result.lookups.filter(l => l.query.includes(normalizedFeature));
-  // D23: Return actual feature match status, not always found:true
-  if (featureMatches.length > 0) {
-    return { found: true, lookups: featureMatches, method: result.method, featureMatch: true };
-  }
-  // Library was looked up but not for this specific feature — still counts as library-level lookup
-  return { found: true, lookups: result.lookups, method: result.method, featureMatch: false };
-}
-
 function clearState() {
   const statePath = getStatePath();
   try {
@@ -255,7 +242,6 @@ module.exports = {
   findMappedLibrary,
   recordResolveAttempt,
   hasLookup,
-  hasFeatureLookup,
   clearState,
   dumpState,
 };

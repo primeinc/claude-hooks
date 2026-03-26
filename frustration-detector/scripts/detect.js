@@ -10,10 +10,10 @@ const frustLog = createLogger("frustration-detector");
  * Classifies user prompts into: HIGH, CIRCULAR_RETRY, SCOPE_DRIFT, MILD, or NONE.
  * All patterns are regex — no LLM in the pipeline.
  *
- * Reads JSON from stdin (UserPromptSubmit hook format).
- * Outputs JSON with systemMessage for matches, or exits silently for clean input.
+ * Reads JSON from stdin (UserPromptSubmit hook format: { user_prompt, session_id, ... }).
+ * Outputs JSON with { continue, systemMessage } for matches, or exits silently for clean input.
  *
- * Ported from quick-detect.sh to eliminate the bash/node runtime split.
+ * @see {@link https://docs.anthropic.com/en/docs/claude-code/hooks} for hook I/O contract
  */
 
 // ── Messages ────────────────────────────────────────────────────────
@@ -197,7 +197,8 @@ if (require.main === module) {
     try {
       const parsed = JSON.parse(input);
       setContext({ session_id: parsed.session_id, hook_event_name: parsed.hook_event_name });
-      prompt = parsed.prompt || parsed.user_prompt;
+      // First-party docs: UserPromptSubmit stdin has `user_prompt` field
+      prompt = parsed.user_prompt || parsed.prompt;
     } catch {
       process.exit(0);
     }

@@ -11,6 +11,8 @@ const bashLog = createLogger("bash-guards");
  * loaded from ../rules.json against actual command nodes.
  *
  * Zero hardcoded policy. All rules are data.
+ *
+ * @see {@link https://docs.anthropic.com/en/docs/claude-code/hooks} for hook I/O contract
  */
 
 const { readFileSync } = require("fs");
@@ -338,6 +340,33 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
   }
 }
 
+/**
+ * Extract all $(...) contents from a string, handling nested parens.
+ * Returns array of inner strings (outermost $() only — evaluate recurses).
+ */
+function extractDollarParen(str) {
+  const results = [];
+  let i = 0;
+  while (i < str.length) {
+    if (str[i] === "$" && i + 1 < str.length && str[i + 1] === "(") {
+      let depth = 1;
+      let start = i + 2;
+      i = start;
+      while (i < str.length && depth > 0) {
+        if (str[i] === "(") depth++;
+        if (str[i] === ")") depth--;
+        i++;
+      }
+      if (depth === 0) {
+        results.push(str.slice(start, i - 1));
+      }
+    } else {
+      i++;
+    }
+  }
+  return results;
+}
+
 function evaluate(rawCommand) {
   // Strip heredoc/herestring content — bodies are data, not commands
   // D19: Handle both \n and \r\n line endings (Windows)
@@ -442,16 +471,16 @@ function evaluate(rawCommand) {
   }
 
   // Recurse into backtick, $(), and process substitution <() >()
+  // $() uses depth tracking (not regex) to handle nesting like $(echo $(find .))
   const backtickRe = /`([^`]+)`/g;
-  const dollarParenRe = /\$\(([^)]+)\)/g;
   const procSubRe = /[<>]\(([^)]+)\)/g;
   let subMatch;
   while ((subMatch = backtickRe.exec(rawCommand)) !== null) {
     const result = evaluate(subMatch[1]);
     if (result) return result;
   }
-  while ((subMatch = dollarParenRe.exec(rawCommand)) !== null) {
-    const result = evaluate(subMatch[1]);
+  for (const inner of extractDollarParen(rawCommand)) {
+    const result = evaluate(inner);
     if (result) return result;
   }
   while ((subMatch = procSubRe.exec(rawCommand)) !== null) {
@@ -619,6 +648,10 @@ function checkSegmentStandards(seg, cwd) {
 }
 
 // ── Main ─────────────────────────────────────────────────────────────
+// PreToolUse deny contract:
+//   Docs: { hookSpecificOutput: { permissionDecision }, systemMessage }
+//   hookEventName: not in docs, but runtime requires it (removing caused 4-day bypass — cf1c742)
+//   permissionDecisionReason: not in docs, but harmless and aids debugging
 
 let input = "";
 process.stdin.setEncoding("utf8");

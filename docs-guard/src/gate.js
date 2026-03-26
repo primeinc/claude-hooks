@@ -5,12 +5,13 @@
  * that haven't been looked up in docs first.
  *
  * Hook contract (PreToolUse JSON mode):
- *   stdin:  { session_id, transcript_path, cwd, permission_mode, hook_event_name, tool_name, tool_input, tool_use_id }
+ *   stdin:  { session_id, transcript_path, cwd, permission_mode, hook_event_name, tool_name, tool_input }
  *   allow:  exit 0 (no output needed)
  *   block:  exit 0 + JSON to stdout:
- *     { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "..." } }
+ *     { hookSpecificOutput: { permissionDecision: "deny" }, systemMessage: "..." }
+ *   Runtime also needs hookEventName in hookSpecificOutput (not in docs but required — cf1c742)
  *
- * @see {@link https://code.claude.com/docs/en/hooks} for hook I/O contract
+ * @see {@link https://docs.anthropic.com/en/docs/claude-code/hooks} for hook I/O contract
  */
 
 const fs = require("fs");
@@ -319,7 +320,10 @@ async function main() {
       // Allow: exit 0, no output needed
       process.exit(0);
     } else {
-      // Block: PreToolUse contract
+      // Block: PreToolUse deny contract
+      // Docs: { hookSpecificOutput: { permissionDecision }, systemMessage }
+      // hookEventName: not in docs, but runtime requires it (removing it caused the 4-day bypass — cf1c742)
+      // permissionDecisionReason: not in docs, but harmless and aids debugging
       const output = JSON.stringify({
         hookSpecificOutput: {
           hookEventName: "PreToolUse",
@@ -335,6 +339,7 @@ async function main() {
     logError("Gate failed", { error: e.message, stack: e.stack });
     // D1: Fail-CLOSED on internal errors — silent allow was the 4-day bypass
     const errMsg = "GATE INTERNAL ERROR: docs-guard crashed. Blocking as precaution. Error: " + (e.message || "unknown") + ". Try the operation again. If this persists, check the docs-guard log in your temp directory for details.";
+    // See deny block above for contract notes on hookEventName/permissionDecisionReason
     const output = JSON.stringify({
       hookSpecificOutput: {
         hookEventName: "PreToolUse",

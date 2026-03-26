@@ -216,6 +216,7 @@ check("block", "backtick find",           "`find . -name foo`",            msg("
 check("block", "backtick grep",           "echo `grep -r secret .`",      msg("no-grep", {cmd:"grep"}));
 check("block", "$() find",               "echo $(find . -name foo)",      msg("no-find", {cmd:"find"}));
 check("block", "$() grep",               "result=$(grep foo bar)",        msg("no-grep", {cmd:"grep"}));
+check("block", "nested $() find",       "echo $(echo $(find . -name foo))", msg("no-find", {cmd:"find"}));
 
 // ── env/exec prefix bypass ──
 check("block", "env grep",               "env grep foo bar",              msg("no-grep", {cmd:"grep"}));

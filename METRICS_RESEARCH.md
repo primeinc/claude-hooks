@@ -13,7 +13,7 @@
 **PostToolUse input fields** (documented):
 `session_id`, `transcript_path`, `cwd`, `permission_mode`, `hook_event_name`, `tool_name`, `tool_input`, `tool_result`
 
-Note: `tool_result` is the documented field name. Previous code used `tool_response` (wrong).
+Note: `tool_result` is the documented field name. Code now reads `tool_result` with `tool_response` fallback for older builds.
 
 Source: `/anthropics/claude-code` — `plugins/plugin-dev/skills/hook-development/SKILL.md`
 

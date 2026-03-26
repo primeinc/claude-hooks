@@ -7,7 +7,7 @@
  *   "Does the hook output match the contract?"
  *   "Does the full resolve → query-docs → Write flow work?"
  *
- * Hook contract (code.claude.com/docs/en/hooks):
+ * Hook contract (docs.anthropic.com/en/docs/claude-code/hooks):
  *   exit 0 + no stdout         = allow
  *   exit 0 + JSON stdout       = decision in hookSpecificOutput
  *   exit 2 + stderr            = block (simple mode)
@@ -16,7 +16,7 @@
  *   { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny",
  *     permissionDecisionReason: "..." } }
  *
- * PostToolUse input uses tool_response (not tool_result).
+ * PostToolUse input uses tool_result (first-party docs field name).
  */
 
 // Isolate from live session hooks
@@ -139,7 +139,7 @@ test("resolve + query-docs counts as a doc lookup", () => {
   runTracker({
     tool_name: "mcp__context7__resolve-library-id",
     tool_input: { libraryName: "next", query: "next.js" },
-    tool_response: "- Context7-compatible library ID: /vercel/next.js\n- Description: Next.js docs",
+    tool_result: "- Context7-compatible library ID: /vercel/next.js\n- Description: Next.js docs",
   });
   runTracker({
     tool_name: "mcp__context7__query-docs",
@@ -296,7 +296,7 @@ test("resolve + query-docs + Write: allowed", () => {
   runTracker({
     tool_name: "mcp__context7__resolve-library-id",
     tool_input: { libraryName: "react", query: "useOptimistic" },
-    tool_response: "- Context7-compatible library ID: /facebook/react\n- Description: React library",
+    tool_result: "- Context7-compatible library ID: /facebook/react\n- Description: React library",
   });
   runTracker({
     tool_name: "mcp__context7__query-docs",
@@ -326,7 +326,7 @@ test("gate blocks → resolve + query-docs → gate allows", () => {
   runTracker({
     tool_name: "mcp__context7__resolve-library-id",
     tool_input: { libraryName: "zod", query: "zod validation" },
-    tool_response: "- Context7-compatible library ID: /colinhacks/zod\n- Description: Zod schema validation",
+    tool_result: "- Context7-compatible library ID: /colinhacks/zod\n- Description: Zod schema validation",
   });
   runTracker({
     tool_name: "mcp__context7__query-docs",
@@ -446,7 +446,7 @@ test("deny output has all required fields per docs", () => {
   assert(result.exitCode === 0, "Must exit 0");
   assert(result.stdout, "Must produce stdout");
   const parsed = JSON.parse(result.stdout);
-  // These three fields are REQUIRED per code.claude.com/docs/en/hooks
+  // These three fields are REQUIRED per docs.anthropic.com/en/docs/claude-code/hooks
   assert(parsed.hookSpecificOutput.hookEventName === "PreToolUse",
     "REGRESSION: missing hookEventName — this caused the 4-day bypass");
   assert(parsed.hookSpecificOutput.permissionDecision === "deny",

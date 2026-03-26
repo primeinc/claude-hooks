@@ -21,7 +21,6 @@
     "test:docs-guard": "node docs-guard/tests/test-extract.js && node docs-guard/tests/test-pipeline.js",
     "benchmark": "node frustration-detector/scripts/test-frustration.js --benchmark --verbose",
     "compare": "node frustration-detector/scripts/compare-benchmarks.js",
-    "scan": "node bash-guards/scripts/adversarial-scan.js",
     "analyze:sessions": "node scripts/analyze-sessions.js"
   }
 }

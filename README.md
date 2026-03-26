@@ -123,7 +123,22 @@ claude-hooks/
 └── .gitignore
 ```
 
-**No LLM in the pipeline.** Both hooks are Node.js. The frustration detector uses regex pattern matching. The bash guard uses a tokenizer → AST → config-driven policy engine.
+**No LLM in the pipeline.** All hooks are Node.js. The frustration detector uses regex pattern matching. The bash guard uses a tokenizer → AST → config-driven policy engine.
+
+## Hook Contract
+
+All hooks follow the [first-party hook contract](https://docs.anthropic.com/en/docs/claude-code/hooks). Key details:
+
+| Aspect | First-party docs | This repo | Notes |
+|--------|-----------------|-----------|-------|
+| **PreToolUse deny** | `{ hookSpecificOutput: { permissionDecision: "deny" }, systemMessage }` | Also includes `hookEventName` and `permissionDecisionReason` | `hookEventName` is undocumented but required by runtime (removing it caused a 4-day bypass — cf1c742). `permissionDecisionReason` is harmless extra. |
+| **PreToolUse allow** | Exit 0, no stdout | Exit 0, no stdout | Aligned |
+| **PostToolUse stdin** | `tool_result` field | Reads `tool_result` with `tool_response` fallback | Docs say `tool_result`. Fallback for older builds. |
+| **UserPromptSubmit** | `{ continue, suppressOutput?, systemMessage? }` | `{ continue: true, systemMessage }` | Aligned (suppressOutput is optional) |
+| **SessionStart stdin** | Common fields only (no `source` documented) | Reads `source` to distinguish startup from resume | `source` is undocumented. Code defaults to clearing state if field is missing (fail-safe). |
+| **Matchers** | Regex or `*` wildcard | `*`, `Bash`, `Write\|Edit`, pipe-delimited | Aligned |
+| **hooks.json** | `{ hooks: { EventName: [...] } }` wrapper | Same | Aligned |
+| **Exit codes** | 0=allow, 0+JSON=decision, 2+stderr=block | Uses exit 0 + JSON for all decisions | Aligned (JSON mode) |
 
 ## Docs-Guard: Context7 Usage
 

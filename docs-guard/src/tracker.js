@@ -8,9 +8,9 @@
  * WebSearch/WebFetch/learndocs: records lookup directly.
  *
  * Hook input fields (PostToolUse): session_id, transcript_path, cwd,
- * permission_mode, hook_event_name, tool_name, tool_input, tool_response.
+ * permission_mode, hook_event_name, tool_name, tool_input, tool_result.
  *
- * @see {@link https://github.com/anthropics/claude-code} for hook I/O contract
+ * @see {@link https://docs.anthropic.com/en/docs/claude-code/hooks} for hook I/O contract
  */
 
 const {
@@ -32,7 +32,7 @@ function handleResolve(toolInput, toolResponse) {
   // Record that resolve was attempted
   recordResolveAttempt(npmName, query);
 
-  // Parse context7 IDs from tool_response (PostToolUse stdin field)
+  // Parse context7 IDs from tool_result (PostToolUse stdin field)
   const context7Ids = parseContext7Ids(toolResponse);
   if (context7Ids.length > 0) {
     recordMapping(npmName, context7Ids);
@@ -44,7 +44,7 @@ function handleResolve(toolInput, toolResponse) {
       responseType: typeof toolResponse,
       responsePreview: toolResponse
         ? (typeof toolResponse === "string" ? toolResponse : JSON.stringify(toolResponse)).slice(0, 300)
-        : "(no tool_response)",
+        : "(no tool_result)",
     });
   }
 
@@ -52,7 +52,7 @@ function handleResolve(toolInput, toolResponse) {
 }
 
 /**
- * Parse context7 library IDs from resolve-library-id tool_response.
+ * Parse context7 library IDs from resolve-library-id tool_result.
  * The response is text containing lines like:
  *   "- Context7-compatible library ID: /reactjs/react.dev"
  */
@@ -144,7 +144,7 @@ const SIMPLE_EXTRACTORS = {
  * Core tracking logic.
  * @param {string} toolName
  * @param {object} toolInput
- * @param {*} toolResponse - tool output (tool_response field from PostToolUse stdin)
+ * @param {*} toolResponse - tool output (tool_result field from PostToolUse stdin)
  * @returns {boolean} true if a lookup was recorded
  */
 function track(toolName, toolInput, toolResponse) {
@@ -187,7 +187,8 @@ async function main() {
   try {
     const hookInput = JSON.parse(raw);
     setContext({ session_id: hookInput.session_id, hook_event_name: hookInput.hook_event_name, tool_name: hookInput.tool_name });
-    track(hookInput.tool_name, hookInput.tool_input || {}, hookInput.tool_response);
+    // First-party docs use tool_result; older builds may send tool_response
+    track(hookInput.tool_name, hookInput.tool_input || {}, hookInput.tool_result ?? hookInput.tool_response);
     process.exit(0);
   } catch (e) {
     log.error("Tracker stdin parse failed", { error: e.message });
