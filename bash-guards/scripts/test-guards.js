@@ -493,6 +493,24 @@ verifyAllowContract("D27: npm test allow has no stdout",   "npm test");
   }
 }
 
+// Missing/empty tool_input — should allow silently (not crash)
+{
+  const input = JSON.stringify({});
+  let stdout = "";
+  try {
+    stdout = execSync(`node "${SCRIPT}"`, { input, stdio: ["pipe", "pipe", "pipe"], shell: true }).toString();
+  } catch (e) { stdout = (e.stdout || "").toString(); }
+  if (stdout.trim() === "") { pass++; } else { fail++; console.log("FAIL: missing tool_input should allow silently"); }
+}
+{
+  const input = JSON.stringify({ tool_input: {} });
+  let stdout = "";
+  try {
+    stdout = execSync(`node "${SCRIPT}"`, { input, stdio: ["pipe", "pipe", "pipe"], shell: true }).toString();
+  } catch (e) { stdout = (e.stdout || "").toString(); }
+  if (stdout.trim() === "") { pass++; } else { fail++; console.log("FAIL: empty tool_input should allow silently"); }
+}
+
 // D10: exempt_when scoped to pipeline (rg.exe in separate pipeline doesn't exempt grep)
 check("block", "D10: rg.exe in separate pipeline doesn't exempt grep", "rg.exe --version; grep -r secrets .", msg("no-grep", {cmd:"grep"}));
 

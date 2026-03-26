@@ -490,5 +490,25 @@ test("unknown tool produces deny (fail-closed)", () => {
   assert(parsed.hookSpecificOutput.permissionDecision === "deny", "Must deny unknown tool");
 });
 
+test("missing tool_input allows (no code to check)", () => {
+  clearState();
+  const result = runGate({
+    tool_name: "Write",
+    tool_input: {},
+  });
+  assert(result.ok === true, "Should allow — no file_path or content to parse");
+});
+
+test("missing tool_name produces deny (fail-closed)", () => {
+  clearState();
+  const result = runHook(GATE, {
+    tool_input: { file_path: "src/app.tsx", content: 'import x from "x"' },
+  });
+  assert(result.exitCode === 0, "Must exit 0");
+  assert(result.stdout, "Must deny missing tool_name");
+  const parsed = JSON.parse(result.stdout);
+  assert(parsed.hookSpecificOutput.permissionDecision === "deny", "Must deny missing tool_name");
+});
+
 console.log(`\n--- Results: ${passed} passed, ${failed} failed ---\n`);
 process.exit(failed > 0 ? 1 : 0);

@@ -155,6 +155,7 @@ All hooks follow the [first-party hook contract](https://docs.anthropic.com/en/d
 | **Matchers** | Regex or `*` wildcard | `*`, `Bash`, `Write\|Edit`, pipe-delimited | Aligned |
 | **hooks.json** | `{ hooks: { EventName: [...] } }` wrapper | Same | Aligned |
 | **Exit codes** | 0=allow, 0+JSON=decision, 2+stderr=block | Uses exit 0 + JSON for all decisions | Aligned (JSON mode) |
+| **Hook events used** | 9 available | 4 used: PreToolUse, PostToolUse, UserPromptSubmit, SessionStart | SessionEnd, Stop, SubagentStop, PreCompact, Notification not needed |
 
 ## Docs-Guard: Context7 Usage
 
@@ -179,7 +180,7 @@ The docs-guard enforces a **docs-before-code** workflow. Before writing code tha
 ## Known Limitations
 
 **Frustration detector:**
-- **ALL CAPS instructions** ("GET THE DOCS", "DELETE IT ALL") trigger HIGH even when they're commands, not rage. The 3+ consecutive cap words rule can't distinguish.
+- **ALL CAPS instructions** with 5+ consecutive capitalized words trigger HIGH even when they're commands, not rage. 3-4 cap words are allowed (instructions like "GET THE DOCS", "STOP CONDITION NOT MET").
 - **Hostile-but-clean language** ("nonsensical lazy approach", "this is garbage") is not detected without unacceptable false positive rates.
 - **Casual profanity is mostly handled** but edge cases remain. Direction detection uses proximity heuristics that can misjudge at boundary distances.
 
