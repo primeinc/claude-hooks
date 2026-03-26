@@ -12,7 +12,7 @@
 const fs = require("fs");
 const path = require("path");
 const { clearState, dumpState } = require("../src/state");
-const { track, EXTRACTORS } = require("../src/tracker");
+const { track, SIMPLE_EXTRACTORS } = require("../src/tracker");
 const { check, PARSEABLE } = require("../src/gate");
 
 const toolsFile = process.argv[2];
@@ -36,7 +36,7 @@ for (const call of toolCalls) {
   const { tool, input } = call;
 
   // Track doc lookups using the real tracker module
-  if (EXTRACTORS[tool]) {
+  if (SIMPLE_EXTRACTORS[tool]) {
     const recorded = track(tool, input);
     if (recorded) docLookups++;
     // Don't skip Read — it might also be a Write/Edit (it won't, but don't filter)

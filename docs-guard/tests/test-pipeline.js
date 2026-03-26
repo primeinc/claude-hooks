@@ -37,8 +37,8 @@ function assert(condition, msg) {
 /**
  * Run a hook script with simulated stdin input.
  * Returns { exitCode, stdout, stderr } matching the real hook contract:
- *   - exit 0 = allow (tracker: recorded, gate: allowed)
- *   - exit 2 = block (gate: reason on stderr)
+ *   - exit 0 + no stdout = allow
+ *   - exit 0 + JSON stdout with permissionDecision: "deny" = block
  *   - exit 1 = non-blocking error
  */
 function runHook(script, input) {
@@ -62,17 +62,25 @@ function runHook(script, input) {
 
 /**
  * Convenience: run gate and return { ok, reason } for test assertions.
+ * Gate now uses the proper PreToolUse JSON contract (stdout, not stderr).
  */
 function runGate(input) {
   const result = runHook(GATE, input);
-  if (result.exitCode === 0) {
-    return { ok: true };
+  if (result.exitCode !== 0) {
+    // Unexpected non-zero exit — treat as allow (fail-open)
+    return { ok: true, warning: `Unexpected exit ${result.exitCode}: ${result.stderr}` };
   }
-  if (result.exitCode === 2) {
-    return { ok: false, reason: result.stderr };
+  // Exit 0: check stdout for deny decision
+  if (result.stdout) {
+    try {
+      const parsed = JSON.parse(result.stdout);
+      const decision = parsed?.hookSpecificOutput?.permissionDecision;
+      if (decision === "deny") {
+        return { ok: false, reason: parsed.systemMessage || "" };
+      }
+    } catch {}
   }
-  // Unexpected exit code
-  return { ok: true, warning: `Unexpected exit ${result.exitCode}: ${result.stderr}` };
+  return { ok: true };
 }
 
 /**
@@ -163,30 +171,7 @@ test("tracker records WebSearch", () => {
   assert(state.lookups[0].query.includes("prisma"));
 });
 
-test("tracker ignores Read outside ~/dev/refs/", () => {
-  clearState();
-  runTracker({
-    tool_name: "Read",
-    tool_input: { file_path: "/home/user/project/src/index.ts" },
-  });
-  const state = dumpState();
-  // Check that no lookup with source "local-refs" was added (more resilient than count check
-  // which can be affected by live hook race conditions writing to same state file)
-  const refsLookups = state.lookups.filter(l => l.source === "local-refs");
-  assert(refsLookups.length === 0, "Should not have any local-refs lookups for non-refs path");
-});
-
-test("tracker records Read inside ~/dev/refs/", () => {
-  clearState();
-  runTracker({
-    tool_name: "Read",
-    tool_input: { file_path: "/home/user/dev/refs/next.js/docs/api.md" },
-  });
-  const state = dumpState();
-  assert(state.lookups.length === 1);
-  assert(state.lookups[0].library === "next.js");
-  assert(state.lookups[0].source === "local-refs");
-});
+// Read tracking removed — Read is no longer in PostToolUse matcher (hooks.json)
 
 test("tracker always exits 0", () => {
   const result = runTracker({

@@ -4,12 +4,12 @@
  * PreToolUse hook: blocks Write/Edit if the code uses third-party libraries
  * that haven't been looked up in docs first.
  *
- * Hook contract:
- *   stdin:  { session_id, hook_event_name, tool_name, tool_input, ... }
- *   allow:  exit 0 (stdout ignored)
- *   block:  exit 2 + reason on stderr (fed directly to Claude)
+ * Hook contract (PreToolUse):
+ *   stdin:  { session_id, hook_event_name, tool_name, tool_input, cwd, ... }
+ *   allow:  exit 0 (no output needed)
+ *   block:  exit 0 + JSON to stdout with hookSpecificOutput.permissionDecision: "deny"
  *
- * @see {@link https://code.claude.com/docs/en/hooks} for hook I/O contract
+ * @see {@link https://github.com/anthropics/claude-code} for hook I/O contract
  */
 
 const fs = require("fs");
@@ -304,12 +304,18 @@ async function main() {
       // Allow: exit 0, no output needed
       process.exit(0);
     } else {
-      // Block: exit 2, reason on stderr (fed to Claude by the hook system)
-      process.stderr.write(result.reason);
-      process.exit(2);
+      // Block: PreToolUse contract — permissionDecision + systemMessage
+      const output = JSON.stringify({
+        hookSpecificOutput: {
+          permissionDecision: "deny",
+        },
+        systemMessage: result.reason,
+      });
+      process.stdout.write(output + "\n");
+      process.exit(0);
     }
   } catch (e) {
-    logError(`Gate failed:`, e.message, e.stack);
+    logError("Gate failed", { error: e.message, stack: e.stack });
     // Fail open — don't block on internal errors
     process.exit(0);
   }

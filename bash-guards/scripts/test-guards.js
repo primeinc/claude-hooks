@@ -28,7 +28,7 @@ function parseOutput(stdout) {
     const parsed = JSON.parse(stdout);
     const out = parsed?.hookSpecificOutput;
     if (out?.permissionDecision === "deny") {
-      return { blocked: true, reason: out.permissionDecisionReason || "" };
+      return { blocked: true, reason: parsed.systemMessage || "" };
     }
   } catch {}
   return null;

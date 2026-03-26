@@ -47,7 +47,10 @@ function readState() {
 }
 
 function writeState(state) {
-  fs.writeFileSync(getStatePath(), JSON.stringify(state, null, 2));
+  const target = getStatePath();
+  const tmp = target + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
+  fs.renameSync(tmp, target);
 }
 
 // --- Lookups (completed doc reads) ---

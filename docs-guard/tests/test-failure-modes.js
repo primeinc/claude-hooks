@@ -251,5 +251,82 @@ test("returns empty for null/undefined response", () => {
   assert(parseContext7Ids("").length === 0);
 });
 
+test("strips trailing backslash-n from JSON-encoded response", () => {
+  // Real production response text — context7 returns this as a JSON string
+  // where newlines are literal \n characters, not actual newlines
+  const text = "Available Libraries:\\n\\n- Title: React\\n- Context7-compatible library ID: /reactjs/react.dev\\n- Description: React docs\\n- Code Snippets: 2781\\n----------\\n- Title: React\\n- Context7-compatible library ID: /websites/react_dev\\n- Description: React reference\\n----------\\n- Title: React\\n- Context7-compatible library ID: /facebook/react/v19_2_0\\n- Description: The library for web and native user interfaces.\\n";
+
+  const ids = parseContext7Ids(text);
+  assert(ids.length === 3, `Expected 3 IDs, got ${ids.length}: ${JSON.stringify(ids)}`);
+  assert(ids[0] === "/reactjs/react.dev", `Expected /reactjs/react.dev, got ${ids[0]}`);
+  assert(ids[1] === "/websites/react_dev", `Expected /websites/react_dev, got ${ids[1]}`);
+  assert(ids[2] === "/facebook/react/v19_2_0", `Expected /facebook/react/v19_2_0, got ${ids[2]}`);
+});
+
+test("handles mixed real and escaped newlines", () => {
+  // Response might have actual newlines AND escaped ones depending on encoding
+  const text = `- Context7-compatible library ID: /colinhacks/zod\\n- Description: zod
+- Context7-compatible library ID: /tanstack/query
+- Context7-compatible library ID: /pmndrs/zustand\\n----------`;
+
+  const ids = parseContext7Ids(text);
+  assert(ids.length === 3, `Expected 3 IDs, got ${ids.length}: ${JSON.stringify(ids)}`);
+  assert(ids[0] === "/colinhacks/zod", `Expected clean /colinhacks/zod, got ${ids[0]}`);
+  assert(ids[1] === "/tanstack/query", `Got ${ids[1]}`);
+  assert(ids[2] === "/pmndrs/zustand", `Expected clean /pmndrs/zustand, got ${ids[2]}`);
+});
+
+// ── End-to-end mapping flow with real response text ──
+
+console.log("\n--- End-to-end mapping flow ---\n");
+
+test("full flow: parseContext7Ids → recordMapping → findMappedLibrary → hasLookup", () => {
+  clearState();
+
+  // Simulate resolve-library-id response with escaped newlines (production format)
+  const resolveResponse = "Available Libraries:\\n\\n- Title: React\\n- Context7-compatible library ID: /reactjs/react.dev\\n- Description: React docs\\n----------\\n- Title: React\\n- Context7-compatible library ID: /facebook/react/v19_2_0\\n- Description: Core library\\n";
+
+  // Step 1: Parse IDs from response
+  const ids = parseContext7Ids(resolveResponse);
+  assert(ids.length === 2, `Expected 2 IDs, got ${ids.length}`);
+  assert(!ids[0].includes("\\"), `ID should not contain backslash: ${ids[0]}`);
+
+  // Step 2: Record mapping (what tracker.handleResolve does)
+  recordMapping("react", ids);
+
+  // Step 3: Verify findMappedLibrary works with clean IDs
+  const found = findMappedLibrary("/reactjs/react.dev");
+  assert(found === "react", `Expected "react", got "${found}"`);
+  const found2 = findMappedLibrary("/facebook/react/v19_2_0");
+  assert(found2 === "react", `Expected "react" for versioned ID, got "${found2}"`);
+
+  // Step 4: Simulate query-docs recording (what tracker.handleQueryDocs does)
+  recordLookup("react", "useOptimistic hook", "context7");
+
+  // Step 5: Verify hasLookup finds it via exact match (NOT fuzzy)
+  const lookup = hasLookup("react");
+  assert(lookup.found, "Should find react lookup");
+  assert(lookup.method === "exact", `Expected "exact" method (deterministic), got "${lookup.method}"`);
+});
+
+test("full flow with scoped package: @vitejs/plugin-react", () => {
+  clearState();
+
+  const resolveResponse = "- Context7-compatible library ID: /vitejs/vite-plugin-react\\n- Description: React plugin for Vite";
+  const ids = parseContext7Ids(resolveResponse);
+  assert(ids.length === 1, `Expected 1 ID, got ${ids.length}`);
+  assert(ids[0] === "/vitejs/vite-plugin-react", `Got ${ids[0]}`);
+
+  recordMapping("@vitejs/plugin-react", ids);
+  const mapped = findMappedLibrary("/vitejs/vite-plugin-react");
+  assert(mapped === "@vitejs/plugin-react", `Expected scoped name, got "${mapped}"`);
+
+  // query-docs uses the mapping to record under npm name
+  recordLookup("@vitejs/plugin-react", "react plugin setup", "context7");
+  const lookup = hasLookup("@vitejs/plugin-react");
+  assert(lookup.found, "Should find scoped package");
+  assert(lookup.method === "exact", `Expected exact, got "${lookup.method}"`);
+});
+
 console.log(`\n--- Results: ${passed} passed, ${failed} failed ---\n`);
 process.exit(failed > 0 ? 1 : 0);

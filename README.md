@@ -125,6 +125,26 @@ claude-hooks/
 
 **No LLM in the pipeline.** Both hooks are Node.js. The frustration detector uses regex pattern matching. The bash guard uses a tokenizer → AST → config-driven policy engine.
 
+## Docs-Guard: Context7 Usage
+
+The docs-guard enforces a **docs-before-code** workflow. Before writing code that uses a third-party library, Claude must look up the docs. Multiple doc sources are supported:
+
+| Source | When to use | What counts as completion |
+|--------|------------|--------------------------|
+| **context7** (preferred) | npm packages with context7 coverage | `resolve-library-id` → `query-docs`. Resolve alone does NOT count. |
+| **WebSearch / WebFetch** | Fallback when context7 fails, or for non-npm libraries | Any search/fetch that mentions the library name |
+| **learndocs** | Microsoft/Azure-specific docs | Any learndocs search or fetch |
+
+**How the flow works:**
+1. `resolve-library-id` records a **mapping** (npm name → context7 IDs) but is NOT a lookup
+2. `query-docs` records the actual **lookup** under the mapped npm name
+3. The gate checks if each library used in Write/Edit has a lookup recorded
+4. If context7 fails (resolve returns wrong library, query-docs times out), WebSearch/WebFetch are accepted as fallbacks
+
+**Degraded mode:** If resolve was called but query-docs never completed, the gate shows a distinct "DOCS LOOKUP INCOMPLETE" message instead of "DOCS FIRST" — recognizing the intent was there.
+
+**Testing:** Tests use `recordLookup()` and `recordMapping()` directly — no real MCP calls. Fixture-based tests in `test-failure-modes.js` cover the full `parseContext7Ids()` → mapping → lookup flow using real production response text.
+
 ## Known Limitations
 
 **Frustration detector:**

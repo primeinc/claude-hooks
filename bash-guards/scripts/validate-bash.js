@@ -616,10 +616,9 @@ process.stdin.on("end", () => {
     bashLog.info("Blocked", { rule: result.ruleId || "unknown", reason: result.reason, command: cmd.slice(0, 100) });
     const output = JSON.stringify({
       hookSpecificOutput: {
-        hookEventName: "PreToolUse",
         permissionDecision: "deny",
-        permissionDecisionReason: result.reason,
       },
+      systemMessage: result.reason,
     });
     process.stdout.write(output + "\n");
     process.exit(0);
@@ -631,10 +630,9 @@ process.stdin.on("end", () => {
     bashLog.info("Blocked (standards)", { reason: stdResult.reason, command: cmd.slice(0, 100) });
     const output = JSON.stringify({
       hookSpecificOutput: {
-        hookEventName: "PreToolUse",
         permissionDecision: "deny",
-        permissionDecisionReason: stdResult.reason,
       },
+      systemMessage: stdResult.reason,
     });
     process.stdout.write(output + "\n");
     process.exit(0);

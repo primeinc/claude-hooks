@@ -208,7 +208,7 @@ if (require.main === module) {
 
     const category = classify(prompt);
     if (category) {
-      frustLog.info("Detected", { category: category.name, score: category.score });
+      frustLog.info("Detected", { category });
       const output = hookOutput(category);
       if (output) {
         process.stdout.write(JSON.stringify(output) + "\n");
