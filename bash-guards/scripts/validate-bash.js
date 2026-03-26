@@ -367,6 +367,32 @@ function extractDollarParen(str) {
   return results;
 }
 
+/**
+ * Extract all <(...) and >(...) process substitution contents, handling nested parens.
+ */
+function extractProcSub(str) {
+  const results = [];
+  let i = 0;
+  while (i < str.length) {
+    if ((str[i] === "<" || str[i] === ">") && i + 1 < str.length && str[i + 1] === "(") {
+      let depth = 1;
+      let start = i + 2;
+      i = start;
+      while (i < str.length && depth > 0) {
+        if (str[i] === "(") depth++;
+        if (str[i] === ")") depth--;
+        i++;
+      }
+      if (depth === 0) {
+        results.push(str.slice(start, i - 1));
+      }
+    } else {
+      i++;
+    }
+  }
+  return results;
+}
+
 function evaluate(rawCommand) {
   // Strip heredoc/herestring content — bodies are data, not commands
   // D19: Handle both \n and \r\n line endings (Windows)
@@ -471,9 +497,9 @@ function evaluate(rawCommand) {
   }
 
   // Recurse into backtick, $(), and process substitution <() >()
-  // $() uses depth tracking (not regex) to handle nesting like $(echo $(find .))
+  // $() and <()/>() use depth tracking (not regex) to handle nesting
+  // Backticks can't nest in bash (inner ` terminates outer `), so regex is correct
   const backtickRe = /`([^`]+)`/g;
-  const procSubRe = /[<>]\(([^)]+)\)/g;
   let subMatch;
   while ((subMatch = backtickRe.exec(rawCommand)) !== null) {
     const result = evaluate(subMatch[1]);
@@ -483,8 +509,8 @@ function evaluate(rawCommand) {
     const result = evaluate(inner);
     if (result) return result;
   }
-  while ((subMatch = procSubRe.exec(rawCommand)) !== null) {
-    const result = evaluate(subMatch[1]);
+  for (const inner of extractProcSub(rawCommand)) {
+    const result = evaluate(inner);
     if (result) return result;
   }
 

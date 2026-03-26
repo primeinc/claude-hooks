@@ -243,6 +243,7 @@ check("allow", "xargs safe cmd",         "echo file.txt | xargs cat");
 check("block", "proc sub find",          "diff <(find . -name '*.ts') list.txt", msg("no-find", {cmd:"find"}));
 check("block", "proc sub grep",          "diff <(grep foo a.txt) <(grep foo b.txt)", msg("no-grep", {cmd:"grep"}));
 check("allow", "proc sub safe",          "diff <(cat a.txt) <(cat b.txt)");
+check("block", "nested proc sub find",  "diff <(echo $(find . -name foo)) list.txt", msg("no-find", {cmd:"find"}));
 
 // ── Herestring ──
 check("block", "herestring find",        'bash <<< "find . -name foo"',   msg("no-find", {cmd:"find"}));

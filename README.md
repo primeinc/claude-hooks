@@ -119,6 +119,22 @@ claude-hooks/
 │   └── scripts/
 │       ├── validate-bash.js  # AST engine — tokenizer, parser, policy
 │       └── test-guards.js    # Test harness
+├── docs-guard/
+│   ├── src/
+│   │   ├── gate.js          # PreToolUse gate — blocks Write/Edit without doc lookup
+│   │   ├── tracker.js       # PostToolUse tracker — records doc lookups
+│   │   ├── extract.js       # AST-based import extraction (ts-morph)
+│   │   ├── state.js         # Session state (lookups, mappings, resolve attempts)
+│   │   └── session-clear.js # SessionStart — clears state on fresh sessions
+│   └── tests/
+│       ├── test-pipeline.js     # Integration tests (tracker + gate)
+│       ├── test-extract.js      # Unit tests for import extraction
+│       ├── test-real-ids.js     # Real context7 ID matching tests
+│       └── test-failure-modes.js # Degraded mode, mapping, D4/D5 regression tests
+├── lib/
+│   └── logger.js            # Shared structured JSON logger
+├── scripts/
+│   └── analyze-sessions.js  # Session JSONL analytics
 ├── package.json
 └── .gitignore
 ```
