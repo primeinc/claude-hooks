@@ -510,5 +510,90 @@ test("missing tool_name produces deny (fail-closed)", () => {
   assert(parsed.hookSpecificOutput.permissionDecision === "deny", "Must deny missing tool_name");
 });
 
+// ─── SessionStart: session-clear.js contract tests ───────────────
+
+const SESSION_CLEAR = path.join(__dirname, "..", "src", "session-clear.js");
+const scriptDir = path.join(__dirname, "..", "..");
+
+/**
+ * Full-isolation SessionStart test via temp script.
+ * Requires cache invalidation because Node v22 module cache makes readState
+ * return stale data after another process deletes the state file.
+ */
+function testSessionClear(source, seedLib) {
+  const cwd = `/test/session-clear/${(source || "none").replace(/[^a-z0-9]/g, "")}/${process.pid}/${Date.now()}`;
+  const hookInput = { session_id: "t", hook_event_name: "SessionStart" };
+  if (source !== undefined) hookInput.source = source;
+  const stateModulePath = path.resolve(path.join(scriptDir, "docs-guard", "src", "state"));
+  const sessionClearPath = path.resolve(path.join(scriptDir, "docs-guard", "src", "session-clear.js"));
+
+  const tmpScript = path.join(os.tmpdir(), `session-clear-test-${process.pid}-${Date.now()}.js`);
+  fs.writeFileSync(tmpScript, `
+    process.env.CLAUDE_CWD = ${JSON.stringify(cwd)};
+    const s = require(${JSON.stringify(stateModulePath)});
+    const { execSync } = require("child_process");
+    s.clearState();
+    s.recordLookup(${JSON.stringify(seedLib)}, "test", "ctx7");
+    const before = s.readState().lookups.length;
+    try {
+      execSync("node " + ${JSON.stringify(sessionClearPath)}, {
+        input: ${JSON.stringify(JSON.stringify(hookInput))},
+        encoding: "utf8",
+        timeout: 5000,
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, CLAUDE_CWD: ${JSON.stringify(cwd)} },
+      });
+    } catch (e) {}
+    // Invalidate module cache before reading state — Node v22 module caching
+    // causes readState to return stale data after subprocess deletes the file
+    delete require.cache[require.resolve(${JSON.stringify(stateModulePath)})];
+    const s2 = require(${JSON.stringify(stateModulePath)});
+    const after = s2.readState().lookups.length;
+    s2.clearState();
+    console.log(JSON.stringify({ before, after }));
+  `);
+  try {
+    const stdout = execSync(`node "${tmpScript}"`, {
+      encoding: "utf8", timeout: 10000,
+      env: { ...process.env, CLAUDE_CWD: cwd },
+    }).trim();
+    return JSON.parse(stdout);
+  } finally {
+    try { fs.unlinkSync(tmpScript); } catch {}
+  }
+}
+
+console.log("\n--- SessionStart behavior ---\n");
+
+test("source=startup clears state", () => {
+  const r = testSessionClear("startup", "react");
+  assert(r.before === 1, `Seed should create 1 lookup, got ${r.before}`);
+  assert(r.after === 0, `Startup should clear state, got ${r.after} lookups`);
+});
+
+test("source=resume preserves state", () => {
+  const r = testSessionClear("resume", "express");
+  assert(r.before === 1, `Seed should create 1 lookup, got ${r.before}`);
+  assert(r.after === 1, `Resume should preserve state, got ${r.after} lookups`);
+});
+
+test("source=compact preserves state", () => {
+  const r = testSessionClear("compact", "zod");
+  assert(r.before === 1, `Seed should create 1 lookup, got ${r.before}`);
+  assert(r.after === 1, `Compact should preserve state, got ${r.after} lookups`);
+});
+
+test("missing source clears state (fail-safe)", () => {
+  const r = testSessionClear(undefined, "prisma");
+  assert(r.before === 1, `Seed should create 1 lookup, got ${r.before}`);
+  assert(r.after === 0, `Missing source should clear state (fail-safe), got ${r.after} lookups`);
+});
+
+test("unknown source clears state (fail-safe)", () => {
+  const r = testSessionClear("something-new", "lodash");
+  assert(r.before === 1, `Seed should create 1 lookup, got ${r.before}`);
+  assert(r.after === 0, `Unknown source should clear state (fail-safe), got ${r.after} lookups`);
+});
+
 console.log(`\n--- Results: ${passed} passed, ${failed} failed ---\n`);
 process.exit(failed > 0 ? 1 : 0);
