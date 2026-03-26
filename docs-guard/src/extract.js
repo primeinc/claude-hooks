@@ -7,8 +7,7 @@
  */
 
 const { Project, SyntaxKind, ScriptTarget } = require("ts-morph");
-const { createLogger } = require("../../lib/logger");
-const { debug } = createLogger("docs-guard");
+const { debug } = require("./debug");
 
 // Singleton project with in-memory FS — no disk IO, reusable across calls
 const project = new Project({

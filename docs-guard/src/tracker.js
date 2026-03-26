@@ -122,12 +122,22 @@ function extractFromWebFetch(input) {
   return { library, query, source: "web-fetch" };
 }
 
+function extractFromRead(input) {
+  const filePath = input.file_path || "";
+  if (!filePath.includes("/refs/") && !filePath.includes("\\refs\\")) return null;
+  const refsIdx = filePath.indexOf("refs");
+  const afterRefs = filePath.slice(refsIdx + 5);
+  const library = afterRefs.split(/[/\\]/)[0] || "";
+  return { library, query: `read ${afterRefs}`, source: "local-refs" };
+}
+
 const SIMPLE_EXTRACTORS = {
   "mcp__learndocs__microsoft_docs_search": extractFromLearndocs,
   "mcp__learndocs__microsoft_docs_fetch": extractFromLearndocs,
   "mcp__learndocs__microsoft_code_sample_search": extractFromLearndocs,
   "WebSearch": extractFromWebSearch,
   "WebFetch": extractFromWebFetch,
+  "Read": extractFromRead,
 };
 
 /**

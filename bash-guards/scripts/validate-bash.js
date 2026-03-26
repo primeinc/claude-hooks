@@ -1,21 +1,8 @@
 #!/usr/bin/env node
 "use strict";
 
-// --- INSTRUMENTATION: diagnose PreToolUse:Bash hook error ---
-// Writes to a dedicated file. Does NOT touch stdout/stderr/exit code.
-const _diagFs = require("fs");
-const _diagPath = require("path");
-const _diagFile = _diagPath.join(require("os").tmpdir(), "claude-hooks-bash-diag.log");
-function _diag(msg) { try { _diagFs.appendFileSync(_diagFile, new Date().toISOString() + " " + msg + "\n"); } catch {} }
-_diag("ENTRY pid=" + process.pid + " CLAUDE_PLUGIN_ROOT=" + (process.env.CLAUDE_PLUGIN_ROOT || "(unset)"));
-// Trap any uncaught errors
-process.on("uncaughtException", (e) => { _diag("UNCAUGHT: " + e.message + "\n" + e.stack); process.exit(1); });
-// --- END INSTRUMENTATION ---
-
 const { createLogger, setContext } = require("../../lib/logger");
-_diag("LOGGER_LOADED");
 const bashLog = createLogger("bash-guards");
-_diag("LOGGER_CREATED");
 
 /**
  * AST-based Bash command validator for Claude Code hooks.
@@ -637,26 +624,22 @@ let input = "";
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (chunk) => { input += chunk; });
 process.stdin.on("end", () => {
-  _diag("STDIN_END len=" + input.length + " preview=" + input.slice(0, 100));
   let parsed;
   try { parsed = JSON.parse(input); } catch (e) {
-    _diag("JSON_PARSE_FAIL: " + e.message);
     // D3: Fail-closed on malformed JSON — silent allow was a bypass vector
     bashLog.error("Malformed JSON stdin", { error: e.message, inputPreview: input.slice(0, 200) });
     const output = JSON.stringify({
       hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "BASH GUARD ERROR: Could not parse hook input. Blocking as precaution." },
       systemMessage: "BASH GUARD ERROR: Could not parse hook input. Blocking as precaution.",
     });
-    _diag("STDOUT_DENY_D3: " + output);
     process.stdout.write(output + "\n");
     process.exit(0);
   }
   setContext({ session_id: parsed?.session_id, hook_event_name: parsed?.hook_event_name, tool_name: parsed?.tool_name });
   const cmd = parsed?.tool_input?.command;
   const cwd = parsed?.cwd;
-  if (!cmd || typeof cmd !== "string" || !cmd.trim()) { _diag("EMPTY_CMD exit0"); process.exit(0); }
+  if (!cmd || typeof cmd !== "string" || !cmd.trim()) process.exit(0);
 
-  _diag("EVALUATING cmd=" + cmd.slice(0, 80));
   bashLog.debug("Evaluating", { command: cmd.slice(0, 200) });
 
   const result = evaluate(cmd);
@@ -670,7 +653,6 @@ process.stdin.on("end", () => {
       },
       systemMessage: result.reason,
     });
-    _diag("STDOUT_DENY: " + output.slice(0, 200));
     process.stdout.write(output + "\n");
     process.exit(0);
   }
@@ -691,7 +673,6 @@ process.stdin.on("end", () => {
     process.exit(0);
   }
 
-  _diag("ALLOW exit0 cmd=" + cmd.slice(0, 80));
   bashLog.debug("Allowed");
   process.exit(0);
 });

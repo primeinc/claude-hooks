@@ -411,6 +411,21 @@ function verifyBlockContract(label, cmd) {
     return;
   }
 
+  // ROOT CAUSE REGRESSION: hookEventName was removed in b1ee23d causing
+  // Claude Code to treat all denials as hook errors and allow commands through.
+  // This field is REQUIRED for Claude Code to recognize the deny response.
+  if (parsed?.hookSpecificOutput?.hookEventName !== "PreToolUse") {
+    fail++;
+    console.log(`FAIL: ${label} (missing hookEventName — THIS CAUSED THE 4-DAY BYPASS)`);
+    return;
+  }
+
+  if (!parsed?.hookSpecificOutput?.permissionDecisionReason || typeof parsed.hookSpecificOutput.permissionDecisionReason !== "string") {
+    fail++;
+    console.log(`FAIL: ${label} (missing permissionDecisionReason)`);
+    return;
+  }
+
   if (!parsed.systemMessage || typeof parsed.systemMessage !== "string") {
     fail++;
     console.log(`FAIL: ${label} (missing or non-string systemMessage)`);
