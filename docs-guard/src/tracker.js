@@ -8,7 +8,7 @@
  * WebSearch/WebFetch/learndocs: records lookup directly.
  *
  * Hook input fields (PostToolUse): session_id, transcript_path, cwd,
- * permission_mode, hook_event_name, tool_name, tool_input, tool_result.
+ * permission_mode, hook_event_name, tool_name, tool_input, tool_response.
  *
  * @see {@link https://github.com/anthropics/claude-code} for hook I/O contract
  */
@@ -24,7 +24,7 @@ const log = createLogger("docs-guard");
 
 // --- resolve-library-id: mapping only, NOT a lookup ---
 
-function handleResolve(toolInput, toolResult) {
+function handleResolve(toolInput, toolResponse) {
   const npmName = toolInput.libraryName || "";
   const query = toolInput.query || npmName;
   if (!npmName) return false;
@@ -32,8 +32,8 @@ function handleResolve(toolInput, toolResult) {
   // Record that resolve was attempted
   recordResolveAttempt(npmName, query);
 
-  // Parse context7 IDs from tool_result (PostToolUse stdin field)
-  const context7Ids = parseContext7Ids(toolResult);
+  // Parse context7 IDs from tool_response (PostToolUse stdin field)
+  const context7Ids = parseContext7Ids(toolResponse);
   if (context7Ids.length > 0) {
     recordMapping(npmName, context7Ids);
     log.info("Resolve mapping recorded", { npmName, context7Ids });
@@ -41,10 +41,10 @@ function handleResolve(toolInput, toolResult) {
     // Log raw result shape for debugging
     log.debug("Resolve result — no IDs parsed", {
       npmName,
-      resultType: typeof toolResult,
-      resultPreview: toolResult
-        ? (typeof toolResult === "string" ? toolResult : JSON.stringify(toolResult)).slice(0, 300)
-        : "(no tool_result)",
+      responseType: typeof toolResponse,
+      responsePreview: toolResponse
+        ? (typeof toolResponse === "string" ? toolResponse : JSON.stringify(toolResponse)).slice(0, 300)
+        : "(no tool_response)",
     });
   }
 
@@ -144,13 +144,13 @@ const SIMPLE_EXTRACTORS = {
  * Core tracking logic.
  * @param {string} toolName
  * @param {object} toolInput
- * @param {*} toolResult - tool output (tool_result field from PostToolUse stdin)
+ * @param {*} toolResponse - tool output (tool_response field from PostToolUse stdin)
  * @returns {boolean} true if a lookup was recorded
  */
-function track(toolName, toolInput, toolResult) {
+function track(toolName, toolInput, toolResponse) {
   // resolve-library-id: mapping only
   if (toolName === "mcp__context7__resolve-library-id") {
-    return handleResolve(toolInput, toolResult);
+    return handleResolve(toolInput, toolResponse);
   }
 
   // query-docs: lookup via mapping
@@ -187,8 +187,7 @@ async function main() {
   try {
     const hookInput = JSON.parse(raw);
     setContext({ session_id: hookInput.session_id, hook_event_name: hookInput.hook_event_name, tool_name: hookInput.tool_name });
-    // tool_result is the documented field name; tool_response kept as legacy fallback
-    track(hookInput.tool_name, hookInput.tool_input || {}, hookInput.tool_result ?? hookInput.tool_response);
+    track(hookInput.tool_name, hookInput.tool_input || {}, hookInput.tool_response);
     process.exit(0);
   } catch (e) {
     log.error("Tracker stdin parse failed", { error: e.message });

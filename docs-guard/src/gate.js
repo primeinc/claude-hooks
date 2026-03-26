@@ -4,12 +4,13 @@
  * PreToolUse hook: blocks Write/Edit if the code uses third-party libraries
  * that haven't been looked up in docs first.
  *
- * Hook contract (PreToolUse):
- *   stdin:  { session_id, hook_event_name, tool_name, tool_input, cwd, ... }
+ * Hook contract (PreToolUse JSON mode):
+ *   stdin:  { session_id, transcript_path, cwd, permission_mode, hook_event_name, tool_name, tool_input, tool_use_id }
  *   allow:  exit 0 (no output needed)
- *   block:  exit 0 + JSON to stdout with hookSpecificOutput.permissionDecision: "deny"
+ *   block:  exit 0 + JSON to stdout:
+ *     { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "..." } }
  *
- * @see {@link https://github.com/anthropics/claude-code} for hook I/O contract
+ * @see {@link https://code.claude.com/docs/en/hooks} for hook I/O contract
  */
 
 const fs = require("fs");
@@ -210,7 +211,7 @@ function check(toolName, toolInput) {
   // D13: Block unknown tools — fail-closed defense-in-depth
   if (!KNOWN_TOOLS.has(toolName)) {
     warn(`Unknown tool name routed to docs-guard: ${toolName}`);
-    return { ok: false, reason: `GATE: Unknown tool "${toolName}" routed to docs-guard. Only Write and Edit are supported. Block as precaution.` };
+    return { ok: false, reason: `GATE: Unknown tool "${toolName}" routed to docs-guard. Only Write and Edit are supported. Block as precaution. If you need to use ${toolName}, update the matcher in hooks/hooks.json to exclude it from the docs-guard hook.` };
   }
 
   const filePath = toolInput.file_path || "";
@@ -333,7 +334,7 @@ async function main() {
   } catch (e) {
     logError("Gate failed", { error: e.message, stack: e.stack });
     // D1: Fail-CLOSED on internal errors — silent allow was the 4-day bypass
-    const errMsg = "GATE INTERNAL ERROR: docs-guard crashed. Blocking as precaution. Error: " + (e.message || "unknown");
+    const errMsg = "GATE INTERNAL ERROR: docs-guard crashed. Blocking as precaution. Error: " + (e.message || "unknown") + ". Try the operation again. If this persists, check the docs-guard log in your temp directory for details.";
     const output = JSON.stringify({
       hookSpecificOutput: {
         hookEventName: "PreToolUse",

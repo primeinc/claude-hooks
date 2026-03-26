@@ -43,7 +43,8 @@ function rotateIfNeeded() {
   } catch (e) {
     if (e.code !== "ENOENT") {
       // Can't stat the file for some other reason — don't crash
-      console.error(`[docs-guard] Log rotation failed: ${e.message}`);
+      // Can't use main log — write to emergency fallback instead
+      try { fs.appendFileSync(logFilePath + ".errors", `${new Date().toISOString()} Log rotation failed: ${e.message}\n`); } catch {}
     }
   }
 }
@@ -65,7 +66,7 @@ function appendToFile(line) {
   try {
     fs.appendFileSync(logFilePath, line);
   } catch (e) {
-    console.error(`[docs-guard] Failed to write log: ${e.message}`);
+    try { fs.appendFileSync(logFilePath + ".errors", `${new Date().toISOString()} Log write failed: ${e.message}\n`); } catch {}
   }
 }
 
@@ -77,13 +78,13 @@ function debug(...args) {
 
 function warn(...args) {
   const line = formatLine("WARN", args);
-  console.error(line.trimEnd());
+  if (debugEnabled) console.error(line.trimEnd());
   if (logToFile) appendToFile(line);
 }
 
 function error(...args) {
   const line = formatLine("ERROR", args);
-  console.error(line.trimEnd());
+  if (debugEnabled) console.error(line.trimEnd());
   if (logToFile) appendToFile(line);
 }
 

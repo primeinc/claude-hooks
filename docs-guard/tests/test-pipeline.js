@@ -143,7 +143,7 @@ test("tracker records context7 query-docs (with mapping)", () => {
   runTracker({
     tool_name: "mcp__context7__resolve-library-id",
     tool_input: { libraryName: "next", query: "next.js" },
-    tool_result: "- Context7-compatible library ID: /vercel/next.js\n- Description: Next.js docs",
+    tool_response: "- Context7-compatible library ID: /vercel/next.js\n- Description: Next.js docs",
   });
   runTracker({
     tool_name: "mcp__context7__query-docs",
@@ -312,7 +312,7 @@ test("full pipeline: tracker then gate", () => {
   runTracker({
     tool_name: "mcp__context7__resolve-library-id",
     tool_input: { libraryName: "react", query: "useOptimistic" },
-    tool_result: "- Context7-compatible library ID: /facebook/react\n- Description: React library",
+    tool_response: "- Context7-compatible library ID: /facebook/react\n- Description: React library",
   });
   runTracker({
     tool_name: "mcp__context7__query-docs",
@@ -353,7 +353,7 @@ test("full pipeline: gate blocks then tracker unblocks", () => {
   runTracker({
     tool_name: "mcp__context7__resolve-library-id",
     tool_input: { libraryName: "zod", query: "zod validation" },
-    tool_result: "- Context7-compatible library ID: /colinhacks/zod\n- Description: Zod schema validation",
+    tool_response: "- Context7-compatible library ID: /colinhacks/zod\n- Description: Zod schema validation",
   });
   runTracker({
     tool_name: "mcp__context7__query-docs",
