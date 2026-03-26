@@ -318,11 +318,12 @@ async function main() {
       // Allow: exit 0, no output needed
       process.exit(0);
     } else {
-      // Block: PreToolUse contract — permissionDecision + systemMessage
+      // Block: PreToolUse contract
       const output = JSON.stringify({
         hookSpecificOutput: {
           hookEventName: "PreToolUse",
           permissionDecision: "deny",
+          permissionDecisionReason: result.reason,
         },
         systemMessage: result.reason,
       });
@@ -332,11 +333,14 @@ async function main() {
   } catch (e) {
     logError("Gate failed", { error: e.message, stack: e.stack });
     // D1: Fail-CLOSED on internal errors — silent allow was the 4-day bypass
+    const errMsg = "GATE INTERNAL ERROR: docs-guard crashed. Blocking as precaution. Error: " + (e.message || "unknown");
     const output = JSON.stringify({
       hookSpecificOutput: {
+        hookEventName: "PreToolUse",
         permissionDecision: "deny",
+        permissionDecisionReason: errMsg,
       },
-      systemMessage: "GATE INTERNAL ERROR: docs-guard crashed. Blocking as precaution. Error: " + (e.message || "unknown"),
+      systemMessage: errMsg,
     });
     process.stdout.write(output + "\n");
     process.exit(0);

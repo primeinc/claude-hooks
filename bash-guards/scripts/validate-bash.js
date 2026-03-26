@@ -644,7 +644,7 @@ process.stdin.on("end", () => {
     // D3: Fail-closed on malformed JSON — silent allow was a bypass vector
     bashLog.error("Malformed JSON stdin", { error: e.message, inputPreview: input.slice(0, 200) });
     const output = JSON.stringify({
-      hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny" },
+      hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "BASH GUARD ERROR: Could not parse hook input. Blocking as precaution." },
       systemMessage: "BASH GUARD ERROR: Could not parse hook input. Blocking as precaution.",
     });
     _diag("STDOUT_DENY_D3: " + output);
@@ -666,6 +666,7 @@ process.stdin.on("end", () => {
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
+        permissionDecisionReason: result.reason,
       },
       systemMessage: result.reason,
     });
@@ -682,6 +683,7 @@ process.stdin.on("end", () => {
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
+        permissionDecisionReason: stdResult.reason,
       },
       systemMessage: stdResult.reason,
     });
