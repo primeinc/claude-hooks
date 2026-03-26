@@ -44,7 +44,7 @@ async function main() {
     process.exit(0);
   } catch (e) {
     log.error("Session clear failed", { error: e.message });
-    process.exit(1);
+    process.exit(1); // Exit 1 = internal error (logged, not surfaced to Claude)
   }
 }
 
