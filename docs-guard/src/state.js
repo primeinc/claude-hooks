@@ -5,7 +5,6 @@
  *   lookups:          completed doc reads (query-docs, WebSearch, etc.)
  *   mappings:         npm name → context7 library IDs (from resolve-library-id)
  *   resolveAttempts:  records that resolve-library-id was called (tracks intent)
- *   providerFailures: records incomplete lookup flows (resolve happened, query-docs didn't)
  *
  * State persists across the session in a temp file keyed by working directory.
  *
@@ -25,7 +24,7 @@ function getStatePath() {
   return path.join(os.tmpdir(), `docs-guard-${hash}.json`);
 }
 
-const EMPTY_STATE = { lookups: [], mappings: [], resolveAttempts: [], providerFailures: [] };
+const EMPTY_STATE = { lookups: [], mappings: [], resolveAttempts: [] };
 
 function readState() {
   const statePath = getStatePath();
@@ -35,7 +34,6 @@ function readState() {
     // Migrate old format
     if (!state.mappings) state.mappings = [];
     if (!state.resolveAttempts) state.resolveAttempts = [];
-    if (!state.providerFailures) state.providerFailures = [];
     if (!state.lookups) state.lookups = [];
     return state;
   } catch (e) {
@@ -109,20 +107,6 @@ function recordResolveAttempt(npmName, query) {
     ts: Date.now(),
   });
   log.debug("Recorded resolve attempt", { npmName });
-  writeState(state);
-}
-
-// --- Provider failures (incomplete flows) ---
-
-function recordProviderFailure(npmName, stage, reason) {
-  const state = readState();
-  state.providerFailures.push({
-    npmName: npmName.toLowerCase(),
-    stage,
-    reason,
-    ts: Date.now(),
-  });
-  log.warn("Provider failure", { npmName, stage, reason });
   writeState(state);
 }
 
@@ -270,7 +254,6 @@ module.exports = {
   recordMapping,
   findMappedLibrary,
   recordResolveAttempt,
-  recordProviderFailure,
   hasLookup,
   hasFeatureLookup,
   clearState,

@@ -1,6 +1,6 @@
 {
   "name": "docs-guard",
-  "version": "3.2.0",
+  "version": "5.0.2",
   "private": true,
   "description": "AST-based enforcement: blocks Write/Edit of code using third-party libraries without prior doc lookup via context7, learndocs, or web search",
   "scripts": {

@@ -19,7 +19,6 @@ const {
   recordLookup,
   recordMapping,
   recordResolveAttempt,
-  recordProviderFailure,
   hasLookup,
   findMappedLibrary,
 } = require("../src/state");
