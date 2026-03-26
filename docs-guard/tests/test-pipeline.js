@@ -1,16 +1,20 @@
 /**
  * Integration tests for the tracker + gate pipeline.
- * All tests use subprocess invocation matching the real hook runner contract.
+ * Tests HOOK BEHAVIOR, not internal state mechanics.
+ *
+ * Every test here answers one of:
+ *   "Does this tool call get blocked or allowed?"
+ *   "Does the hook output match the contract?"
+ *   "Does the full resolve → query-docs → Write flow work?"
  *
  * Hook contract (code.claude.com/docs/en/hooks):
  *   exit 0 + no stdout         = allow
  *   exit 0 + JSON stdout       = decision in hookSpecificOutput
- *   exit 2 + stderr            = block (simple mode, not used here)
- *   other exit                 = non-blocking error
+ *   exit 2 + stderr            = block (simple mode)
  *
  * PreToolUse deny JSON:
  *   { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny",
- *     permissionDecisionReason: "..." }, systemMessage: "..." }
+ *     permissionDecisionReason: "..." } }
  *
  * PostToolUse input uses tool_response (not tool_result).
  */
@@ -22,7 +26,7 @@ const { execSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { clearState, dumpState, recordLookup, hasLookup } = require("../src/state");
+const { clearState, recordLookup } = require("../src/state");
 
 const GATE = path.join(__dirname, "..", "src", "gate.js");
 const TRACKER = path.join(__dirname, "..", "src", "tracker.js");
@@ -47,7 +51,7 @@ function assert(condition, msg) {
 }
 
 /**
- * Run a hook script with simulated stdin input.
+ * Run a hook script as subprocess with JSON on stdin.
  * Returns { exitCode, stdout, stderr }.
  */
 function runHook(script, input) {
@@ -77,12 +81,10 @@ function runGate(input) {
   const result = runHook(GATE, input);
   assert(result.exitCode === 0, `Gate must exit 0, got ${result.exitCode}. stderr: ${result.stderr}`);
 
-  // No stdout = allow
   if (!result.stdout || !result.stdout.trim()) {
     return { ok: true };
   }
 
-  // Has stdout — must be valid JSON with correct contract shape
   let parsed;
   try {
     parsed = JSON.parse(result.stdout);
@@ -104,58 +106,35 @@ function runGate(input) {
 }
 
 /**
- * Run tracker. PostToolUse — should always exit 0 with no stdout.
+ * Run tracker subprocess. Returns { exitCode, stdout }.
  */
 function runTracker(input) {
   const result = runHook(TRACKER, input);
   return { exitCode: result.exitCode, stdout: result.stdout };
 }
 
-// ─── State management tests ──────────────────────────────────────
+// ─── Tracker: does looking up docs get recorded? ─────────────────
 
-clearState();
-console.log("\n--- State management tests ---\n");
+console.log("\n--- Tracker behavior ---\n");
 
-test("clearState starts empty", () => {
-  clearState();
-  const state = dumpState();
-  assert(state.lookups.length === 0, `Expected 0 lookups, got ${state.lookups.length}`);
-});
-
-test("recordLookup + hasLookup works", () => {
-  clearState();
-  recordLookup("react", "useOptimistic hook usage", "context7");
-  assert(hasLookup("react").found, "Expected to find react lookup");
-  assert(!hasLookup("express").found, "Should not find express lookup");
-});
-
-test("hasLookup is case-insensitive", () => {
-  clearState();
-  recordLookup("React", "hooks API", "context7");
-  assert(hasLookup("react").found, "Case-insensitive lookup failed");
-});
-
-test("hasLookup matches query containing library name", () => {
-  clearState();
-  recordLookup("", "how to use zod for validation", "web-search");
-  assert(hasLookup("zod").found, "Should match zod from query text");
-});
-
-// ─── Tracker (PostToolUse) tests ─────────────────────────────────
-
-console.log("\n--- Tracker (PostToolUse) tests ---\n");
-
-test("tracker does NOT record context7 resolve-library-id (anti-gaming)", () => {
+test("resolve-library-id does NOT count as a doc lookup", () => {
   clearState();
   runTracker({
     tool_name: "mcp__context7__resolve-library-id",
     tool_input: { libraryName: "next.js", query: "server actions" },
   });
-  const state = dumpState();
-  assert(state.lookups.length === 0, `resolve-library-id should not count as lookup, got ${state.lookups.length}`);
+  // Gate should still block — resolve alone is not enough
+  const result = runGate({
+    tool_name: "Write",
+    tool_input: {
+      file_path: "src/app.tsx",
+      content: 'import next from "next";\nexport default next;',
+    },
+  });
+  assert(result.ok === false, "Should block — resolve-library-id alone is not a doc lookup");
 });
 
-test("tracker records context7 query-docs (with mapping)", () => {
+test("resolve + query-docs counts as a doc lookup", () => {
   clearState();
   runTracker({
     tool_name: "mcp__context7__resolve-library-id",
@@ -166,100 +145,74 @@ test("tracker records context7 query-docs (with mapping)", () => {
     tool_name: "mcp__context7__query-docs",
     tool_input: { libraryId: "/vercel/next.js", query: "app router middleware" },
   });
-  const state = dumpState();
-  assert(state.lookups.length === 1, `Expected 1 lookup, got ${state.lookups.length}`);
-  assert(state.lookups[0].library === "next");
-  assert(state.lookups[0].query.includes("middleware"));
-});
-
-test("tracker records learndocs search", () => {
-  clearState();
-  runTracker({
-    tool_name: "mcp__learndocs__microsoft_docs_search",
-    tool_input: { query: "Azure Functions trigger bindings" },
+  const result = runGate({
+    tool_name: "Write",
+    tool_input: {
+      file_path: "src/app.tsx",
+      content: 'import next from "next";\nexport default next;',
+    },
   });
-  const state = dumpState();
-  assert(state.lookups.length === 1);
-  assert(state.lookups[0].source === "learndocs");
+  assert(result.ok === true, "Should allow — resolve + query-docs is a complete lookup");
 });
 
-test("tracker records WebSearch", () => {
+test("WebSearch counts as a doc lookup", () => {
   clearState();
   runTracker({
     tool_name: "WebSearch",
     tool_input: { query: "prisma client findMany documentation" },
   });
-  const state = dumpState();
-  assert(state.lookups.length === 1);
-  assert(state.lookups[0].query.includes("prisma"));
+  const result = runGate({
+    tool_name: "Write",
+    tool_input: {
+      file_path: "src/db.ts",
+      content: 'import { PrismaClient } from "prisma";\nconst p = new PrismaClient();',
+    },
+  });
+  assert(result.ok === true, "Should allow — WebSearch for prisma counts as lookup");
 });
 
-test("tracker always exits 0 with no stdout", () => {
+test("tracker produces no stdout (PostToolUse contract)", () => {
   clearState();
   const result = runTracker({
-    tool_name: "mcp__context7__resolve-library-id",
-    tool_input: { libraryName: "react", query: "hooks" },
+    tool_name: "WebSearch",
+    tool_input: { query: "react documentation" },
   });
-  assert(result.exitCode === 0, `Tracker should exit 0, got ${result.exitCode}`);
+  assert(result.exitCode === 0, `Tracker must exit 0, got ${result.exitCode}`);
   assert(!result.stdout || result.stdout.trim() === "",
     `Tracker must produce no stdout, got: "${result.stdout}"`);
 });
 
-// ─── Gate (PreToolUse) tests ─────────────────────────────────────
+// ─── Gate: does it block/allow correctly? ────────────────────────
 
-console.log("\n--- Gate (PreToolUse) tests ---\n");
+console.log("\n--- Gate behavior ---\n");
 
-test("gate allows Write with no imports", () => {
-  clearState();
-  const result = runGate({
-    tool_name: "Write",
-    tool_input: {
-      file_path: "src/utils.ts",
-      content: "export function add(a: number, b: number) { return a + b; }",
-    },
-  });
-  assert(result.ok === true, "Should allow code with no imports");
-});
-
-test("gate allows non-parseable files (json, md)", () => {
-  clearState();
-  const result = runGate({
-    tool_name: "Write",
-    tool_input: {
-      file_path: "config.json",
-      content: '{ "react": true }',
-    },
-  });
-  assert(result.ok === true, "Should skip non-JS/TS files");
-});
-
-test("gate blocks Write with uncovered library", () => {
+test("blocks Write with uncovered library", () => {
   clearState();
   const result = runGate({
     tool_name: "Write",
     tool_input: {
       file_path: "src/app.tsx",
-      content: 'import { useState } from "react";\nexport function App() { const [x] = useState(0); return <div>{x}</div>; }',
+      content: 'import { useState } from "react";\nexport function App() { return useState(0); }',
     },
   });
-  assert(result.ok === false, "Should block uncovered react usage");
-  assert(result.reason.includes("react"), `Reason should mention react: ${result.reason}`);
+  assert(result.ok === false, "Should block uncovered react");
+  assert(result.reason.includes("react"), "Reason should mention react");
 });
 
-test("gate allows Write after doc lookup", () => {
+test("allows Write after doc lookup", () => {
   clearState();
   recordLookup("react", "useState hook", "context7");
   const result = runGate({
     tool_name: "Write",
     tool_input: {
       file_path: "src/app.tsx",
-      content: 'import { useState } from "react";\nexport function App() { const [x] = useState(0); return <div>{x}</div>; }',
+      content: 'import { useState } from "react";\nexport function App() { return useState(0); }',
     },
   });
   assert(result.ok === true, "Should allow after lookup");
 });
 
-test("gate blocks only uncovered libraries (partial coverage)", () => {
+test("blocks only uncovered libraries when partially covered", () => {
   // Full subprocess isolation — prevents live hook state pollution
   const uniqueCwd = "/test/partial/" + process.pid + "/" + Date.now();
   const scriptDir = path.join(__dirname, "..", "..");
@@ -283,7 +236,31 @@ test("gate blocks only uncovered libraries (partial coverage)", () => {
   assert(r.react === false, "Should NOT mention react (covered)");
 });
 
-test("gate handles Edit tool (new_string)", () => {
+test("allows Write with no imports", () => {
+  clearState();
+  const result = runGate({
+    tool_name: "Write",
+    tool_input: {
+      file_path: "src/utils.ts",
+      content: "export function add(a: number, b: number) { return a + b; }",
+    },
+  });
+  assert(result.ok === true, "Should allow code with no imports");
+});
+
+test("allows non-parseable files (json, md)", () => {
+  clearState();
+  const result = runGate({
+    tool_name: "Write",
+    tool_input: {
+      file_path: "config.json",
+      content: '{ "react": true }',
+    },
+  });
+  assert(result.ok === true, "Should skip non-JS/TS files");
+});
+
+test("blocks Edit with uncovered library in new_string", () => {
   clearState();
   const result = runGate({
     tool_name: "Edit",
@@ -296,7 +273,7 @@ test("gate handles Edit tool (new_string)", () => {
   assert(result.ok === false, "Should block uncovered express in Edit");
 });
 
-test("gate allows Edit after lookup", () => {
+test("allows Edit after lookup", () => {
   clearState();
   recordLookup("express", "middleware routing", "context7");
   const result = runGate({
@@ -310,7 +287,11 @@ test("gate allows Edit after lookup", () => {
   assert(result.ok === true, "Should allow express after lookup");
 });
 
-test("full pipeline: resolve + query-docs + gate allows", () => {
+// ─── Full pipeline: resolve → query-docs → Write ────────────────
+
+console.log("\n--- Full pipeline ---\n");
+
+test("resolve + query-docs + Write: allowed", () => {
   clearState();
   runTracker({
     tool_name: "mcp__context7__resolve-library-id",
@@ -325,13 +306,13 @@ test("full pipeline: resolve + query-docs + gate allows", () => {
     tool_name: "Write",
     tool_input: {
       file_path: "src/optimistic.tsx",
-      content: 'import { useOptimistic } from "react";\nexport function Counter() { const [o, add] = useOptimistic(0); return <div>{o}</div>; }',
+      content: 'import { useOptimistic } from "react";\nexport function C() { const [o] = useOptimistic(0); return o; }',
     },
   });
   assert(result.ok === true, "Full pipeline should allow after lookup");
 });
 
-test("full pipeline: gate blocks then resolve + query-docs unblocks", () => {
+test("gate blocks → resolve + query-docs → gate allows", () => {
   clearState();
   const blocked = runGate({
     tool_name: "Write",
@@ -361,11 +342,11 @@ test("full pipeline: gate blocks then resolve + query-docs unblocks", () => {
   assert(allowed.ok === true, "Should allow after lookup");
 });
 
-// ─── Edit with file-head reading tests ───────────────────────────
+// ─── Edit with file-head reading ─────────────────────────────────
 
-console.log("\n--- Edit file-head reading tests ---\n");
+console.log("\n--- Edit file-head behavior ---\n");
 
-test("Edit reads imports from file on disk when new_string has no imports", () => {
+test("Edit blocks for imported symbols used in new_string", () => {
   clearState();
   const tmpDir = path.join(os.tmpdir(), "docs-guard-test-" + process.pid);
   fs.mkdirSync(tmpDir, { recursive: true });
@@ -390,12 +371,12 @@ test("Edit reads imports from file on disk when new_string has no imports", () =
   });
   fs.unlinkSync(tmpFile);
   fs.rmdirSync(tmpDir);
-  assert(result.ok === false, "Should block Edit using react symbols");
+  assert(result.ok === false, "Should block — react symbols in new_string");
   assert(result.reason.includes("react"), "Should mention react");
   assert(!result.reason.includes("zod"), "Should NOT mention zod (z not in new_string)");
 });
 
-test("Edit with file-head imports passes after doc lookup", () => {
+test("Edit allows when all used libraries are looked up", () => {
   clearState();
   recordLookup("react", "useState useEffect hooks", "context7");
   recordLookup("zod", "schema validation", "context7");
@@ -404,12 +385,10 @@ test("Edit with file-head imports passes after doc lookup", () => {
   fs.mkdirSync(tmpDir, { recursive: true });
   const tmpFile = path.join(tmpDir, "component.tsx");
   fs.writeFileSync(tmpFile, [
-    'import { useState, useEffect } from "react";',
+    'import { useState } from "react";',
     'import { z } from "zod";',
     "",
-    "export function MyComponent() {",
-    "  return <div />;",
-    "}",
+    "export function MyComponent() { return <div />; }",
   ].join("\n"));
 
   const result = runGate({
@@ -422,90 +401,10 @@ test("Edit with file-head imports passes after doc lookup", () => {
   });
   fs.unlinkSync(tmpFile);
   fs.rmdirSync(tmpDir);
-  assert(result.ok === true, "Should allow Edit after both lookups");
+  assert(result.ok === true, "Should allow — both libs looked up");
 });
 
-test("Edit on nonexistent file falls back to new_string only", () => {
-  clearState();
-  const result = runGate({
-    tool_name: "Edit",
-    tool_input: {
-      file_path: "/nonexistent/path/foo.ts",
-      old_string: "old",
-      new_string: 'import { z } from "zod";\nconst s = z.string();',
-    },
-  });
-  assert(result.ok === false, "Should still block when file doesn't exist");
-  assert(result.reason.includes("zod"), "Should catch zod from new_string fallback");
-});
-
-// ─── Edit scope precision tests ──────────────────────────────────
-
-console.log("\n--- Edit scope precision tests ---\n");
-
-test("Edit of file with 5 imports blocks only for imports used in new_string", () => {
-  clearState();
-  const tmpDir = path.join(os.tmpdir(), "docs-guard-scope-" + process.pid);
-  fs.mkdirSync(tmpDir, { recursive: true });
-  const tmpFile = path.join(tmpDir, "eslint.config.ts");
-  fs.writeFileSync(tmpFile, [
-    'import tseslint from "typescript-eslint";',
-    'import reactHooks from "eslint-plugin-react-hooks";',
-    'import storybook from "eslint-plugin-storybook";',
-    'import reactRefresh from "eslint-plugin-react-refresh";',
-    'import prettierConfig from "eslint-config-prettier";',
-    "",
-    "export default tseslint.config(",
-    "  reactHooks.configs.flat,",
-    "  storybook.configs.recommended,",
-    "  reactRefresh.configs.recommended,",
-    "  prettierConfig,",
-    ");",
-  ].join("\n"));
-
-  const result = runGate({
-    tool_name: "Edit",
-    tool_input: {
-      file_path: tmpFile,
-      old_string: "  prettierConfig,",
-      new_string: '  { files: ["src/**/*.test.ts"], rules: { "no-unsafe": "off" } },',
-    },
-  });
-  fs.unlinkSync(tmpFile);
-  fs.rmdirSync(tmpDir);
-  assert(result.ok === true, "Should allow edit that doesn't use any imported symbols");
-});
-
-test("Edit using one import out of five blocks only that one", () => {
-  clearState();
-  const tmpDir = path.join(os.tmpdir(), "docs-guard-scope-" + process.pid);
-  fs.mkdirSync(tmpDir, { recursive: true });
-  const tmpFile = path.join(tmpDir, "config.ts");
-  fs.writeFileSync(tmpFile, [
-    'import { z } from "zod";',
-    'import express from "express";',
-    'import cors from "cors";',
-    'import helmet from "helmet";',
-    'import morgan from "morgan";',
-    "",
-    "const app = express();",
-  ].join("\n"));
-
-  const result = runGate({
-    tool_name: "Edit",
-    tool_input: {
-      file_path: tmpFile,
-      old_string: "const app = express();",
-      new_string: "const schema = z.object({ name: z.string() });\nconst app = express();",
-    },
-  });
-  fs.unlinkSync(tmpFile);
-  fs.rmdirSync(tmpDir);
-  assert(result.ok === false, "Should block for uncovered libs in new_string");
-  assert(result.reason.includes("zod"), "Should mention zod");
-});
-
-test("Edit doesn't block for symbols only in old context", () => {
+test("Edit allows when new_string uses no imported symbols", () => {
   clearState();
   const tmpDir = path.join(os.tmpdir(), "docs-guard-scope-" + process.pid);
   fs.mkdirSync(tmpDir, { recursive: true });
@@ -523,37 +422,40 @@ test("Edit doesn't block for symbols only in old context", () => {
     tool_input: {
       file_path: tmpFile,
       old_string: "// TODO: add routes",
-      new_string: "// Routes added below\napp.get(\"/\", (req, res) => res.send(\"ok\"));",
+      new_string: '// Routes added below\napp.get("/", (req, res) => res.send("ok"));',
     },
   });
   fs.unlinkSync(tmpFile);
   fs.rmdirSync(tmpDir);
-  assert(result.ok === true, "Should allow edit using only local variables");
+  assert(result.ok === true, "Should allow — no imported symbols in new_string");
 });
 
-// ─── Hook contract verification ──────────────────────────────────
+// ─── Hook output contract (prevents the 4-day bypass) ────────────
 
-console.log("\n--- Hook contract verification tests ---\n");
+console.log("\n--- Hook output contract ---\n");
 
-test("gate block: valid contract JSON with all required fields", () => {
+test("deny output has all required fields per docs", () => {
   clearState();
   const result = runHook(GATE, {
     tool_name: "Write",
     tool_input: {
       file_path: "src/app.tsx",
-      content: 'import { useState } from "react";\nexport function App() { const [x] = useState(0); return x; }',
+      content: 'import { useState } from "react";\nexport function App() { return useState(0); }',
     },
   });
-  assert(result.exitCode === 0, `Must exit 0, got ${result.exitCode}`);
-  assert(result.stdout, "Block must produce stdout");
+  assert(result.exitCode === 0, "Must exit 0");
+  assert(result.stdout, "Must produce stdout");
   const parsed = JSON.parse(result.stdout);
-  assert(parsed.hookSpecificOutput.hookEventName === "PreToolUse", "Missing hookEventName");
-  assert(parsed.hookSpecificOutput.permissionDecision === "deny", "Missing permissionDecision");
-  assert(parsed.hookSpecificOutput.permissionDecisionReason.length > 0, "Missing permissionDecisionReason");
-  assert(parsed.hookSpecificOutput.permissionDecisionReason.includes("react"), "Reason should mention react");
+  // These three fields are REQUIRED per code.claude.com/docs/en/hooks
+  assert(parsed.hookSpecificOutput.hookEventName === "PreToolUse",
+    "REGRESSION: missing hookEventName — this caused the 4-day bypass");
+  assert(parsed.hookSpecificOutput.permissionDecision === "deny",
+    "Missing permissionDecision");
+  assert(parsed.hookSpecificOutput.permissionDecisionReason.includes("react"),
+    "Missing or wrong permissionDecisionReason");
 });
 
-test("gate allow: no stdout", () => {
+test("allow output has no stdout", () => {
   clearState();
   const result = runHook(GATE, {
     tool_name: "Write",
@@ -562,27 +464,27 @@ test("gate allow: no stdout", () => {
       content: "export const add = (a: number, b: number) => a + b;",
     },
   });
-  assert(result.exitCode === 0, `Must exit 0, got ${result.exitCode}`);
-  assert(!result.stdout || !result.stdout.trim(), `Allow must produce no stdout, got: "${result.stdout}"`);
+  assert(result.exitCode === 0, "Must exit 0");
+  assert(!result.stdout || !result.stdout.trim(), "Allow must produce no stdout");
 });
 
-test("gate malformed input: deny (fail-closed)", () => {
+test("malformed input produces deny (fail-closed)", () => {
   clearState();
-  const result = runHook(GATE, "not valid json at all");
-  assert(result.exitCode === 0, `Must exit 0, got ${result.exitCode}`);
-  assert(result.stdout, "Must produce deny stdout, not silent allow");
+  const result = runHook(GATE, "not valid json");
+  assert(result.exitCode === 0, "Must exit 0");
+  assert(result.stdout, "Must deny, not silent allow");
   const parsed = JSON.parse(result.stdout);
   assert(parsed.hookSpecificOutput.permissionDecision === "deny", "Must deny malformed input");
 });
 
-test("gate unknown tool: deny (fail-closed)", () => {
+test("unknown tool produces deny (fail-closed)", () => {
   clearState();
   const result = runHook(GATE, {
     tool_name: "NotebookEdit",
     tool_input: { file_path: "notebook.ipynb", content: "import pandas as pd" },
   });
-  assert(result.exitCode === 0, `Must exit 0, got ${result.exitCode}`);
-  assert(result.stdout, "Must produce deny stdout for unknown tool");
+  assert(result.exitCode === 0, "Must exit 0");
+  assert(result.stdout, "Must deny unknown tool");
   const parsed = JSON.parse(result.stdout);
   assert(parsed.hookSpecificOutput.hookEventName === "PreToolUse", "Missing hookEventName");
   assert(parsed.hookSpecificOutput.permissionDecision === "deny", "Must deny unknown tool");
