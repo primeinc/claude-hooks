@@ -84,25 +84,30 @@ function handleQueryDocs(toolInput) {
     return true;
   }
 
-  // Fallback: extract from libraryId directly (fuzzy, with warning)
-  const segments = libraryId.split("/").filter(Boolean);
-  const meaningful = segments.filter(s => !/^v?\d/.test(s));
-  const library = meaningful.pop() || segments.pop() || libraryId;
-  log.warn("query-docs fuzzy fallback (no mapping found)", { libraryId, extractedLib: library });
-  recordLookup(library, query, "context7");
-  return true;
+  // D4: No fuzzy fallback. Without a validated mapping, query-docs does NOT count.
+  // A crafted libraryId like "/anything/react" could inject arbitrary library names.
+  // Users must call resolve-library-id first (which creates the mapping),
+  // or use WebSearch/WebFetch as an alternative doc source.
+  log.warn("query-docs rejected — no mapping found for libraryId", { libraryId, query });
+  return false;
 }
 
 // --- Other extractors (unchanged) ---
 
 function extractFromLearndocs(input) {
   const query = input.query || input.search_query || input.url || "";
-  const library = query.split(" ")[0] || "microsoft";
-  return { library, query, source: "learndocs" };
+  // D7: learndocs is for Microsoft/Azure docs only. Record under "microsoft" domain,
+  // NOT the first word of the query (which could inject arbitrary library names).
+  // If someone searches learndocs for "react hooks", that does NOT satisfy the gate for react.
+  return { library: "microsoft", query, source: "learndocs" };
 }
 
 function extractFromWebSearch(input) {
   const query = input.query || input.search_query || "";
+  // D6: Extract a single library name from query if possible, not empty string.
+  // Empty library + fuzzy query matching let one search spray-authorize many libraries.
+  // We record under the query text; hasLookup will match via query containment for the
+  // specific library being checked. But we no longer record library="".
   return { library: "", query, source: "web-search" };
 }
 

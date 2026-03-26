@@ -182,35 +182,50 @@ function hasLookup(library) {
     }
   }
 
-  // 3. Fuzzy match with name variants (demoted — log warning when used)
+  // 3. Variant match: only EXACT variant matches (no bidirectional substring)
+  // D5: Removed substring containment (nv.includes(lv) / lv.includes(nv)) —
+  // it let "react" satisfy "react-router", "react-query", etc.
   const libVariants = nameVariants(lib);
-  const fuzzyMatches = state.lookups.filter(l => {
+  const variantMatches = state.lookups.filter(l => {
     const lookupVariants = nameVariants(l.library);
     for (const nv of libVariants) {
-      if (nv.length <= 1) continue;
+      if (nv.length <= 2) continue; // skip very short names
       for (const lv of lookupVariants) {
-        if (lv.length <= 1) continue;
-        if (nv === lv) return true;
-        if (nv.includes(lv)) return true;
-        if (lv.includes(nv)) return true;
+        if (lv.length <= 2) continue;
+        if (nv === lv) return true; // exact variant match only
       }
-      if (l.query.includes(nv)) return true;
     }
     return false;
   });
-  if (fuzzyMatches.length > 0) {
-    log.warn("Fuzzy match used (no deterministic mapping)", { library: lib, matchedVia: fuzzyMatches[0].library });
-    return { found: true, lookups: fuzzyMatches, method: "fuzzy" };
+  if (variantMatches.length > 0) {
+    log.warn("Variant match used (no deterministic mapping)", { library: lib, matchedVia: variantMatches[0].library });
+    return { found: true, lookups: variantMatches, method: "variant" };
+  }
+
+  // 3b. Query containment: library name must appear in the query as a whole word
+  // D6: Require minimum 3 chars and word-boundary matching to prevent spray
+  if (lib.length >= 3) {
+    const libPattern = new RegExp(`\\b${lib.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    const queryMatches = state.lookups.filter(l => libPattern.test(l.query));
+    if (queryMatches.length > 0) {
+      log.warn("Query containment match", { library: lib, matchedQuery: queryMatches[0].query.slice(0, 100) });
+      return { found: true, lookups: queryMatches, method: "query" };
+    }
   }
 
   // 4. Check for degraded mode: resolve was attempted but query-docs never completed
   const resolveAttempt = state.resolveAttempts.find(r => r.npmName === lib);
   if (resolveAttempt) {
     // Also check if WebSearch/WebFetch covered this library as fallback
-    const webFallback = state.lookups.filter(l =>
-      (l.source === "web-search" || l.source === "web-fetch") &&
-      libVariants.some(v => v.length > 1 && l.query.includes(v))
-    );
+    // Use word-boundary matching, not substring containment
+    const webFallback = state.lookups.filter(l => {
+      if (l.source !== "web-search" && l.source !== "web-fetch") return false;
+      return libVariants.some(v => {
+        if (v.length < 3) return false;
+        const pat = new RegExp(`\\b${v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+        return pat.test(l.query);
+      });
+    });
     if (webFallback.length > 0) {
       return { found: true, lookups: webFallback, method: "web-fallback" };
     }
@@ -225,7 +240,12 @@ function hasFeatureLookup(library, feature) {
   if (!result.found) return result;
   const normalizedFeature = feature.toLowerCase().split(".").pop();
   const featureMatches = result.lookups.filter(l => l.query.includes(normalizedFeature));
-  return { found: true, lookups: featureMatches.length > 0 ? featureMatches : result.lookups, method: result.method };
+  // D23: Return actual feature match status, not always found:true
+  if (featureMatches.length > 0) {
+    return { found: true, lookups: featureMatches, method: result.method, featureMatch: true };
+  }
+  // Library was looked up but not for this specific feature — still counts as library-level lookup
+  return { found: true, lookups: result.lookups, method: result.method, featureMatch: false };
 }
 
 function clearState() {

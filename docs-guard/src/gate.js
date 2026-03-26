@@ -82,8 +82,9 @@ function checkEdit(toolInput, filePath) {
     try {
       result = extract(newString, filePath);
     } catch (e) {
+      // D2: Fail-closed on parse failure — unparseable code cannot be verified
       warn(`AST parse failed for ${filePath}: ${e.message}`);
-      return { ok: true };
+      return { ok: false, reason: "PARSE FAILURE: new_string could not be parsed for import detection. Fix syntax errors or look up any third-party libraries before writing." };
     }
     return checkLibraries(result.libraries);
   }
@@ -93,8 +94,9 @@ function checkEdit(toolInput, filePath) {
   try {
     headResult = extract(head, filePath);
   } catch (e) {
+    // D2: Fail-closed on parse failure — can't verify imports if head is unparseable
     warn(`AST parse of file head failed for ${filePath}: ${e.message}`);
-    return { ok: true };
+    return { ok: false, reason: "PARSE FAILURE: File head could not be parsed for import detection. Fix syntax errors or look up any third-party libraries before editing." };
   }
 
   if (headResult.libraries.length === 0) {
@@ -199,7 +201,18 @@ function checkLibraries(libraries) {
  * @param {object} toolInput - { file_path, content } or { file_path, old_string, new_string }
  * @returns {{ ok: boolean, reason?: string, uncovered?: Array<{name: string, features: string[]}> }}
  */
+/**
+ * Tools the gate knows how to check. Unknown tools are blocked (fail-closed).
+ */
+const KNOWN_TOOLS = new Set(["Write", "Edit"]);
+
 function check(toolName, toolInput) {
+  // D13: Block unknown tools — fail-closed defense-in-depth
+  if (!KNOWN_TOOLS.has(toolName)) {
+    warn(`Unknown tool name routed to docs-guard: ${toolName}`);
+    return { ok: false, reason: `GATE: Unknown tool "${toolName}" routed to docs-guard. Only Write and Edit are supported. Block as precaution.` };
+  }
+
   const filePath = toolInput.file_path || "";
   const { readState } = require("./state");
   const currentState = readState();
@@ -227,8 +240,9 @@ function check(toolName, toolInput) {
   try {
     result = extract(code, filePath);
   } catch (e) {
+    // D2: Fail-closed on parse failure — unparseable code cannot be verified
     warn(`AST parse failed for ${filePath}: ${e.message}`);
-    return { ok: true };
+    return { ok: false, reason: "PARSE FAILURE: Code could not be parsed for import detection. Fix syntax errors or look up any third-party libraries before writing." };
   }
 
   if (result.libraries.length === 0) {
@@ -316,7 +330,14 @@ async function main() {
     }
   } catch (e) {
     logError("Gate failed", { error: e.message, stack: e.stack });
-    // Fail open — don't block on internal errors
+    // D1: Fail-CLOSED on internal errors — silent allow was the 4-day bypass
+    const output = JSON.stringify({
+      hookSpecificOutput: {
+        permissionDecision: "deny",
+      },
+      systemMessage: "GATE INTERNAL ERROR: docs-guard crashed. Blocking as precaution. Error: " + (e.message || "unknown"),
+    });
+    process.stdout.write(output + "\n");
     process.exit(0);
   }
 }

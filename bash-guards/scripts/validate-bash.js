@@ -332,13 +332,16 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
       return null;
 
     default:
+      // D9: Unknown rule type — log error so config typos are visible, not silent
+      bashLog.error("Unknown rule type in rules.json", { type: rule.type, id: rule.id });
       return null;
   }
 }
 
 function evaluate(rawCommand) {
   // Strip heredoc/herestring content — bodies are data, not commands
-  rawCommand = rawCommand.replace(/<<-?\s*['"]?(\w+)['"]?\s*\n[\s\S]*?\n\s*\1\b/g, "");
+  // D19: Handle both \n and \r\n line endings (Windows)
+  rawCommand = rawCommand.replace(/<<-?\s*['"]?(\w+)['"]?\s*\r?\n[\s\S]*?\r?\n\s*\1\b/g, "");
   const tokens = tokenize(rawCommand);
   const pipelines = buildAST(tokens);
   const wrappers = new Set(CONFIG.wrappers || []);
@@ -353,6 +356,13 @@ function evaluate(rawCommand) {
   }
 
   for (const pipeline of pipelines) {
+    // D10: Scope exempt_when to current pipeline, not global
+    const pipelineExes = new Set();
+    for (const seg of pipeline.segments) {
+      const p = parseSegment(seg);
+      if (p) pipelineExes.add(p.exe);
+    }
+
     for (let segIdx = 0; segIdx < pipeline.segments.length; segIdx++) {
       const parsed = parseSegment(pipeline.segments[segIdx]);
       if (!parsed) continue;
@@ -362,7 +372,7 @@ function evaluate(rawCommand) {
       const redirects = pipeline.segments[segIdx].redirects || [];
 
       for (const rule of CONFIG.rules) {
-        const msg = checkRule(rule, exe, args, full, isInPipe, pipeline, segIdx, rawCommand, redirects, allExes);
+        const msg = checkRule(rule, exe, args, full, isInPipe, pipeline, segIdx, rawCommand, redirects, pipelineExes);
         if (msg) {
           return { decision: "block", reason: msg, match: { command: full, argv: args } };
         }
@@ -404,14 +414,26 @@ function evaluate(rawCommand) {
 
       // xargs runs its arguments as a command
       if (exe === "xargs" && args.length > 0) {
-        // Skip xargs flags, find the command
-        let cmdStart = 0;
+        // D11: Skip xargs flags properly, including long flags with values
+        const XARGS_SHORT_WITH_VALUE = new Set(["-n", "-I", "-i", "-d", "-l", "-s", "-P", "-L", "-E"]);
+        const XARGS_LONG_WITH_VALUE = new Set(["--max-args", "--replace", "--delimiter", "--max-lines", "--max-chars", "--max-procs", "--eof"]);
+        let cmdStart = -1;
         for (let ai = 0; ai < args.length; ai++) {
-          if (args[ai].startsWith("-")) { if (/^-[nIidlsP]$/.test(args[ai])) ai++; continue; }
+          if (args[ai].startsWith("--")) {
+            // Long flag: --flag=value or --flag value
+            const eqIdx = args[ai].indexOf("=");
+            const longName = eqIdx >= 0 ? args[ai].slice(0, eqIdx) : args[ai];
+            if (XARGS_LONG_WITH_VALUE.has(longName) && eqIdx < 0) ai++; // skip value
+            continue;
+          }
+          if (args[ai].startsWith("-")) {
+            if (XARGS_SHORT_WITH_VALUE.has(args[ai])) ai++; // skip value
+            continue;
+          }
           cmdStart = ai;
           break;
         }
-        if (args[cmdStart]) {
+        if (cmdStart >= 0 && args[cmdStart]) {
           const result = evaluate(args.slice(cmdStart).join(" "));
           if (result) return result;
         }
@@ -603,7 +625,16 @@ process.stdin.setEncoding("utf8");
 process.stdin.on("data", (chunk) => { input += chunk; });
 process.stdin.on("end", () => {
   let parsed;
-  try { parsed = JSON.parse(input); } catch { process.exit(0); }
+  try { parsed = JSON.parse(input); } catch (e) {
+    // D3: Fail-closed on malformed JSON — silent allow was a bypass vector
+    bashLog.error("Malformed JSON stdin", { error: e.message, inputPreview: input.slice(0, 200) });
+    const output = JSON.stringify({
+      hookSpecificOutput: { permissionDecision: "deny" },
+      systemMessage: "BASH GUARD ERROR: Could not parse hook input. Blocking as precaution.",
+    });
+    process.stdout.write(output + "\n");
+    process.exit(0);
+  }
   setContext({ session_id: parsed?.session_id, hook_event_name: parsed?.hook_event_name, tool_name: parsed?.tool_name });
   const cmd = parsed?.tool_input?.command;
   const cwd = parsed?.cwd;

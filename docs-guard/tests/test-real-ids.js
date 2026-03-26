@@ -2,15 +2,17 @@
  * Tests hasLookup matching against REAL context7 library IDs
  * extracted from production session logs.
  *
- * This is the test that should have existed before shipping.
+ * Post-D4/D5 hardening: tests now use the correct mapping flow
+ * (resolve → mapping → query-docs → lookup under mapped npm name)
+ * instead of the old fuzzy extraction path.
  */
 
 // Isolate from live session hooks
 process.env.CLAUDE_CWD = "/test/real-ids/" + process.pid;
 
 const path = require("path");
-const { clearState, recordLookup, hasLookup } = require("../src/state");
-const { extract } = require("../src/extract");
+const { clearState, recordLookup, recordMapping, hasLookup } = require("../src/state");
+const { track } = require("../src/tracker");
 
 const fixtures = require("./fixtures/real-context7-ids.json");
 
@@ -33,22 +35,29 @@ function assert(condition, msg) {
   if (!condition) throw new Error(msg || "Assertion failed");
 }
 
-console.log("\n--- Real context7 ID matching tests ---\n");
+console.log("\n--- Real context7 ID matching tests (mapping flow) ---\n");
 
-// For each fixture: simulate query-docs recording with the context7 libraryId,
-// then check if hasLookup finds it by npm package name.
+// For each fixture: simulate the full resolve → mapping → query-docs flow.
+// 1. recordMapping(npm, [libraryId]) — what resolve-library-id does
+// 2. track("query-docs", {libraryId, query}) — uses the mapping to record lookup under npm name
+// 3. hasLookup(npm) — should find it via exact match on the mapped npm name
 for (const { npm, libraryId } of fixtures) {
   test(`query-docs ${libraryId} → hasLookup("${npm}")`, () => {
     clearState();
 
-    // Simulate what tracker.extractFromContext7Query does:
-    // library = libraryId.split("/").pop()
-    const trackedLib = libraryId.split("/").pop() || libraryId;
-    recordLookup(trackedLib, "test query for " + npm, "context7");
+    // Step 1: resolve-library-id created a mapping (npm → context7 ID)
+    recordMapping(npm, [libraryId]);
 
+    // Step 2: query-docs uses the mapping to record lookup under npm name
+    const recorded = track("mcp__context7__query-docs", { libraryId, query: "test query for " + npm });
+    assert(recorded, `track() should return true for mapped libraryId ${libraryId}`);
+
+    // Step 3: hasLookup should find it via exact match
     const result = hasLookup(npm);
     assert(result.found,
-      `hasLookup("${npm}") returned false for tracked library "${trackedLib}" (from ${libraryId})`);
+      `hasLookup("${npm}") returned false for mapped libraryId ${libraryId}`);
+    assert(result.method === "exact",
+      `Expected method "exact" (deterministic mapping), got "${result.method}"`);
   });
 }
 
@@ -68,12 +77,46 @@ test("resolve-library-id alone does not satisfy hasLookup", () => {
 
 test("query-docs after resolve satisfies hasLookup", () => {
   clearState();
-  // Step 1: resolve gives us the name (but we don't track it)
-  // Step 2: query-docs gives us the actual doc read
-  const trackedLib = "react.dev"; // from /reactjs/react.dev
-  recordLookup(trackedLib, "useState hooks api", "context7");
+  // Full correct flow: resolve creates mapping, query-docs uses it
+  recordMapping("react", ["/reactjs/react.dev"]);
+  track("mcp__context7__query-docs", { libraryId: "/reactjs/react.dev", query: "useState hooks api" });
   const result = hasLookup("react");
-  assert(result.found, `Should find "react" via reverse containment on "react.dev"`);
+  assert(result.found, "Should find react via mapping");
+  assert(result.method === "exact", `Expected exact, got "${result.method}"`);
+});
+
+console.log("\n--- D4 regression: query-docs without mapping must NOT satisfy gate ---\n");
+
+test("crafted libraryId without mapping does not authorize", () => {
+  clearState();
+  // D4: Without a mapping, query-docs is rejected
+  const recorded = track("mcp__context7__query-docs", { libraryId: "/anything/react", query: "hooks" });
+  assert(!recorded, "query-docs without mapping should return false");
+  const result = hasLookup("react");
+  assert(!result.found, "D4 bypass: crafted libraryId should not authorize react");
+});
+
+console.log("\n--- D5 regression: substring matching must not cross-authorize ---\n");
+
+test("'react' lookup does not satisfy 'react-router'", () => {
+  clearState();
+  recordLookup("react", "hooks api", "context7");
+  const result = hasLookup("react-router");
+  assert(!result.found, "D5 bypass: 'react' lookup should NOT satisfy 'react-router'");
+});
+
+test("'react' lookup does not satisfy 'react-query'", () => {
+  clearState();
+  recordLookup("react", "hooks api", "context7");
+  const result = hasLookup("react-query");
+  assert(!result.found, "D5 bypass: 'react' lookup should NOT satisfy 'react-query'");
+});
+
+test("'next' lookup does not satisfy 'next-auth'", () => {
+  clearState();
+  recordLookup("next", "routing", "context7");
+  const result = hasLookup("next-auth");
+  assert(!result.found, "D5 bypass: 'next' lookup should NOT satisfy 'next-auth'");
 });
 
 console.log("\n--- False positive checks ---\n");
@@ -87,23 +130,38 @@ test("'e' doesn't match everything (length guard)", () => {
 
 test("single char doesn't match (length guard)", () => {
   clearState();
-  recordLookup("react.dev", "hooks", "context7");
+  recordLookup("react", "hooks", "context7");
   const result = hasLookup("r");
   assert(!result.found, "single char should not match");
 });
 
-test("'jquery' doesn't match 'query' lookup", () => {
+test("'jquery' does not match 'query' lookup (D5 fix)", () => {
   clearState();
   recordLookup("query", "tanstack query docs", "context7");
-  // "jquery".includes("query") would be true, but "query".includes("jquery") is false
-  // Both directions are checked, so this tests the length guard
+  // D5: no bidirectional substring — "jquery" is not "query"
   const result = hasLookup("jquery");
-  // "jquery" contains "query" (length 5 > 2) → this WOULD match
-  // This is a known fuzzy-match trade-off - documenting it
-  // If this becomes a real problem, we'd need smarter matching
-  if (result.found) {
-    console.log(`        (known fuzzy trade-off: "jquery" contains "query")`);
-  }
+  assert(!result.found, "D5: 'jquery' should NOT match 'query' lookup (no substring matching)");
+});
+
+test("WebSearch with library name in query satisfies gate", () => {
+  clearState();
+  recordLookup("", "framer-motion animation documentation", "web-search");
+  const result = hasLookup("framer-motion");
+  assert(result.found, "WebSearch mentioning framer-motion should satisfy gate");
+  assert(result.method === "query", `Expected query method, got "${result.method}"`);
+});
+
+test("WebSearch does NOT spray-authorize unmentioned libraries", () => {
+  // Run in subprocess with unique CLAUDE_CWD to fully isolate from live hooks
+  const { execSync } = require("child_process");
+  const uniqueCwd = "/test/spray/" + process.pid + "/" + Date.now();
+  const scriptPath = require("path").join(__dirname, "..", "..");
+  const result = execSync(
+    `node -e "process.env.CLAUDE_CWD='${uniqueCwd}';const s=require('./docs-guard/src/state');s.clearState();s.recordLookup('','react hooks documentation','web-search');const r=s.hasLookup('express');s.clearState();console.log(JSON.stringify(r))"`,
+    { cwd: scriptPath, encoding: "utf8", timeout: 5000, env: { ...process.env, CLAUDE_CWD: uniqueCwd } }
+  ).trim();
+  const parsed = JSON.parse(result);
+  assert(!parsed.found, `D6: WebSearch for react should NOT satisfy express (found=${parsed.found}, method=${parsed.method})`);
 });
 
 console.log(`\n--- Results: ${passed} passed, ${failed} failed ---\n`);

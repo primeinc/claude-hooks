@@ -377,5 +377,111 @@ checkCwd("allow", "yarn test:unit dot ok",              "yarn test:unit", testUn
 // Cleanup
 rmSync(TMP, { recursive: true, force: true });
 
+// ── Contract verification tests (D3, D26, D27, D28) ──
+
+function verifyBlockContract(label, cmd) {
+  const input = JSON.stringify({ tool_input: { command: cmd } });
+  let stdout = "";
+  try {
+    stdout = execSync(`node "${SCRIPT}"`, { input, stdio: ["pipe", "pipe", "pipe"], shell: true }).toString();
+  } catch (e) {
+    fail++;
+    console.log(`FAIL: ${label} (hook crashed with exit ${e.status})`);
+    return;
+  }
+
+  if (!stdout.trim()) {
+    fail++;
+    console.log(`FAIL: ${label} (no stdout — silent allow)`);
+    return;
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch (e) {
+    fail++;
+    console.log(`FAIL: ${label} (stdout not valid JSON: ${stdout.slice(0, 100)})`);
+    return;
+  }
+
+  if (parsed?.hookSpecificOutput?.permissionDecision !== "deny") {
+    fail++;
+    console.log(`FAIL: ${label} (permissionDecision not "deny": ${JSON.stringify(parsed?.hookSpecificOutput)})`);
+    return;
+  }
+
+  if (!parsed.systemMessage || typeof parsed.systemMessage !== "string") {
+    fail++;
+    console.log(`FAIL: ${label} (missing or non-string systemMessage)`);
+    return;
+  }
+
+  pass++;
+}
+
+function verifyAllowContract(label, cmd) {
+  const input = JSON.stringify({ tool_input: { command: cmd } });
+  let stdout = "";
+  let exitCode = 0;
+  try {
+    stdout = execSync(`node "${SCRIPT}"`, { input, stdio: ["pipe", "pipe", "pipe"], shell: true }).toString();
+  } catch (e) {
+    exitCode = e.status;
+    stdout = (e.stdout || "").toString();
+  }
+
+  if (exitCode !== 0) {
+    fail++;
+    console.log(`FAIL: ${label} (exit ${exitCode}, expected 0)`);
+    return;
+  }
+
+  if (stdout.trim()) {
+    fail++;
+    console.log(`FAIL: ${label} (allow should produce no stdout, got: ${stdout.slice(0, 100)})`);
+    return;
+  }
+
+  pass++;
+}
+
+// D28: Block produces valid contract JSON
+verifyBlockContract("D28: grep block has valid contract JSON", "grep -r foo .");
+verifyBlockContract("D28: find block has valid contract JSON", "find . -name foo");
+verifyBlockContract("D28: npx block has valid contract JSON",  "npx eslint .");
+
+// D27: Allow produces no stdout
+verifyAllowContract("D27: git status allow has no stdout", "git status");
+verifyAllowContract("D27: npm test allow has no stdout",   "npm test");
+
+// D3: Malformed JSON stdin → fail-closed (deny)
+{
+  let stdout = "";
+  try {
+    stdout = execSync(`node "${SCRIPT}"`, {
+      input: "this is not json!!!",
+      stdio: ["pipe", "pipe", "pipe"],
+      shell: true,
+    }).toString();
+  } catch (e) {
+    stdout = (e.stdout || "").toString();
+  }
+  const parsed = stdout.trim() ? JSON.parse(stdout) : null;
+  if (parsed?.hookSpecificOutput?.permissionDecision === "deny") {
+    pass++;
+  } else {
+    fail++;
+    console.log("FAIL: D3 malformed JSON should deny (got: " + stdout.slice(0, 100) + ")");
+  }
+}
+
+// D10: exempt_when scoped to pipeline (rg.exe in separate pipeline doesn't exempt grep)
+check("block", "D10: rg.exe in separate pipeline doesn't exempt grep", "rg.exe --version; grep -r secrets .", msg("no-grep", {cmd:"grep"}));
+
+// D11: xargs long flags don't hide the command
+check("block", "D11: xargs --max-procs hides grep", "echo foo | xargs --max-procs 4 grep -r secrets .", msg("no-grep", {cmd:"grep"}));
+check("block", "D11: xargs --replace hides find",    "cat list | xargs --replace={} find {} -name foo", msg("no-find", {cmd:"find"}));
+
 console.log(`\nResults: ${pass} passed, ${fail} failed`);
 process.exit(fail > 0 ? 1 : 0);

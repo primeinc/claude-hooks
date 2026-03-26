@@ -135,14 +135,14 @@ test("query-docs records against mapped npm name", () => {
   assert(result.method === "exact", `Expected method "exact" (mapped name recorded as lookup), got "${result.method}"`);
 });
 
-test("query-docs without mapping falls back to fuzzy with warning", () => {
+test("query-docs without mapping is REJECTED (D4 fix)", () => {
   clearState();
-  // No mapping — tracker will use fuzzy extraction
-  track("mcp__context7__query-docs", { libraryId: "/colinhacks/zod", query: "schema validation" });
+  // D4: No mapping → query-docs does NOT record a lookup (prevents libraryId injection)
+  const recorded = track("mcp__context7__query-docs", { libraryId: "/colinhacks/zod", query: "schema validation" });
 
+  assert(!recorded, "query-docs without mapping should return false");
   const result = hasLookup("zod");
-  assert(result.found, "Should find via fuzzy match");
-  // Method could be "exact" or "fuzzy" depending on extracted name
+  assert(!result.found, "D4 bypass: zod should NOT be found without mapping");
 });
 
 // ── Wrong-library resolve ──
@@ -205,8 +205,8 @@ test("web fallback satisfies gate after incomplete docs-provider flow", () => {
   assert(result.found, "WebSearch fallback should satisfy");
   // Fuzzy match finds it first because the query contains "framer-motion"
   // The web-fallback path is a last resort when fuzzy also fails
-  assert(result.method === "fuzzy" || result.method === "web-fallback",
-    `Expected fuzzy or web-fallback, got "${result.method}"`);
+  assert(result.method === "variant" || result.method === "query" || result.method === "web-fallback",
+    `Expected variant, query, or web-fallback, got "${result.method}"`);
 });
 
 test("gate allows after web fallback for degraded library", () => {

@@ -137,17 +137,25 @@ test("tracker does NOT record context7 resolve-library-id (anti-gaming)", () => 
   assert(state.lookups.length === 0, `resolve-library-id should not count as lookup, got ${state.lookups.length}`);
 });
 
-test("tracker records context7 query-docs", () => {
+test("tracker records context7 query-docs (with mapping)", () => {
   clearState();
+  // D4: query-docs now requires a prior mapping from resolve-library-id
+  runTracker({
+    tool_name: "mcp__context7__resolve-library-id",
+    tool_input: { libraryName: "next", query: "next.js" },
+    tool_result: "- Context7-compatible library ID: /vercel/next.js\n- Description: Next.js docs",
+  });
   runTracker({
     tool_name: "mcp__context7__query-docs",
     tool_input: { libraryId: "/vercel/next.js", query: "app router middleware" },
   });
   const state = dumpState();
-  assert(state.lookups.length === 1);
-  assert(state.lookups[0].library === "next.js");
+  assert(state.lookups.length === 1, `Expected 1 lookup, got ${state.lookups.length}`);
+  assert(state.lookups[0].library === "next");
   assert(state.lookups[0].query.includes("middleware"));
 });
+
+// D4 regression test moved to test-failure-modes.js (uses in-process track() with isolated CWD)
 
 test("tracker records learndocs search", () => {
   clearState();
@@ -300,10 +308,11 @@ test("gate allows Edit after lookup", () => {
 test("full pipeline: tracker then gate", () => {
   clearState();
 
-  // Step 1: Claude looks up react docs via context7
+  // Step 1: Claude looks up react docs via context7 (resolve creates mapping, query-docs uses it)
   runTracker({
     tool_name: "mcp__context7__resolve-library-id",
     tool_input: { libraryName: "react", query: "useOptimistic" },
+    tool_result: "- Context7-compatible library ID: /facebook/react\n- Description: React library",
   });
   runTracker({
     tool_name: "mcp__context7__query-docs",
@@ -340,7 +349,12 @@ test("full pipeline: gate blocks then tracker unblocks", () => {
   });
   assert(blocked.ok === false, "Should block first attempt");
 
-  // Step 2: Claude looks up zod (must use query-docs, not just resolve)
+  // Step 2: Claude looks up zod (resolve first for mapping, then query-docs)
+  runTracker({
+    tool_name: "mcp__context7__resolve-library-id",
+    tool_input: { libraryName: "zod", query: "zod validation" },
+    tool_result: "- Context7-compatible library ID: /colinhacks/zod\n- Description: Zod schema validation",
+  });
   runTracker({
     tool_name: "mcp__context7__query-docs",
     tool_input: { libraryId: "/colinhacks/zod", query: "schema validation" },
@@ -548,6 +562,124 @@ test("Edit that re-includes existing code doesn't block for symbols only in old 
   // "app" is not an imported symbol (express is imported as default "express", used as "express()")
   // But wait — "express" doesn't appear in new_string. Only "app" does, which is a local variable.
   assert(result.ok === true, "Should allow edit using only local variables");
+});
+
+// === Contract verification tests (D26, D27, D28) ===
+
+console.log("\n--- Hook contract verification tests ---\n");
+
+/**
+ * Strict contract validator: verifies raw hook output matches the PreToolUse contract.
+ * Unlike runGate(), this FAILS on malformed JSON instead of treating it as allow.
+ */
+function verifyBlockContract(result) {
+  // D27: Block must exit 0
+  assert(result.exitCode === 0, `Block must exit 0, got ${result.exitCode}`);
+  // D28: stdout must be valid JSON
+  assert(result.stdout, "Block must produce stdout output");
+  let parsed;
+  try {
+    parsed = JSON.parse(result.stdout);
+  } catch (e) {
+    throw new Error(`D26: Block stdout is not valid JSON: ${result.stdout.slice(0, 200)}`);
+  }
+  // D28: Must have correct shape
+  assert(parsed.hookSpecificOutput, "Block JSON missing hookSpecificOutput");
+  assert(parsed.hookSpecificOutput.permissionDecision === "deny",
+    `Block JSON permissionDecision must be "deny", got "${parsed.hookSpecificOutput.permissionDecision}"`);
+  assert(typeof parsed.systemMessage === "string" && parsed.systemMessage.length > 0,
+    "Block JSON must have non-empty systemMessage string");
+  return parsed;
+}
+
+function verifyAllowContract(result) {
+  // Allow must exit 0
+  assert(result.exitCode === 0, `Allow must exit 0, got ${result.exitCode}`);
+  // Allow must produce no stdout (or empty)
+  assert(!result.stdout || result.stdout.trim() === "",
+    `Allow must produce no stdout, got: ${result.stdout.slice(0, 200)}`);
+}
+
+test("D27+D28: gate block produces valid contract JSON", () => {
+  clearState();
+  const result = runHook(GATE, {
+    tool_name: "Write",
+    tool_input: {
+      file_path: "src/app.tsx",
+      content: 'import { useState } from "react";\nexport function App() { const [x] = useState(0); return x; }',
+    },
+  });
+  const parsed = verifyBlockContract(result);
+  assert(parsed.systemMessage.includes("react"), "systemMessage should mention the blocked library");
+});
+
+test("D27: gate allow produces no stdout", () => {
+  clearState();
+  const result = runHook(GATE, {
+    tool_name: "Write",
+    tool_input: {
+      file_path: "src/utils.ts",
+      content: "export const add = (a: number, b: number) => a + b;",
+    },
+  });
+  verifyAllowContract(result);
+});
+
+test("D1: gate malformed input produces deny JSON (fail-closed)", () => {
+  clearState();
+  // Send input with missing required fields — gate must deny, not allow
+  const result = runHook(GATE, "not valid json at all");
+  assert(result.exitCode === 0, `Gate should exit 0, got ${result.exitCode}`);
+  assert(result.stdout, "Gate must produce deny stdout, not silent allow");
+  const parsed = JSON.parse(result.stdout);
+  assert(parsed.hookSpecificOutput?.permissionDecision === "deny",
+    "Gate must deny malformed input, not silently allow");
+});
+
+test("D1: gate crash on null tool_input produces deny JSON (fail-closed)", () => {
+  clearState();
+  // Valid JSON but tool_input is null — gate.check() will crash trying to access properties
+  const { execSync } = require("child_process");
+  let stdout = "";
+  try {
+    // Bypass runHook's JSON.stringify — send raw JSON directly
+    stdout = execSync(`node "${GATE}"`, {
+      input: '{"tool_name":"Write","tool_input":null}',
+      encoding: "utf8",
+      timeout: 10000,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+  } catch (e) {
+    stdout = (e.stdout || "").trim();
+  }
+  // Gate should fail-closed via catch block
+  assert(stdout, "Gate crash must produce deny stdout");
+  const parsed = JSON.parse(stdout);
+  assert(parsed.hookSpecificOutput?.permissionDecision === "deny",
+    "Gate crash must deny, got: " + JSON.stringify(parsed.hookSpecificOutput));
+});
+
+test("D13: gate blocks unknown tool names", () => {
+  clearState();
+  const result = runHook(GATE, {
+    tool_name: "NotebookEdit",
+    tool_input: {
+      file_path: "notebook.ipynb",
+      content: 'import pandas as pd',
+    },
+  });
+  verifyBlockContract(result);
+});
+
+test("tracker produces no stdout (PostToolUse contract)", () => {
+  clearState();
+  const result = runHook(TRACKER, {
+    tool_name: "WebSearch",
+    tool_input: { query: "react documentation" },
+  });
+  assert(result.exitCode === 0, `Tracker must exit 0, got ${result.exitCode}`);
+  assert(!result.stdout || result.stdout.trim() === "",
+    `Tracker must produce no stdout, got: ${result.stdout.slice(0, 200)}`);
 });
 
 console.log(`\n--- Results: ${passed} passed, ${failed} failed ---\n`);

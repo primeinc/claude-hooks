@@ -1,6 +1,6 @@
 {
   "name": "claude-hooks",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "Deterministic frustration detection, AST-based bash command guards, and docs-before-code enforcement for Claude Code. Blocks Write/Edit of code using third-party libraries without prior doc lookup via context7, learndocs, or web search.",
   "author": {
     "name": "primeinc"
