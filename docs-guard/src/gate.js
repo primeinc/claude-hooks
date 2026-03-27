@@ -18,6 +18,7 @@ const fs = require("fs");
 const { extract } = require("./extract");
 const { hasLookup } = require("./state");
 const { createLogger, setContext } = require("../../lib/logger");
+const { denyOutput } = require("../../lib/hook-output");
 const log = createLogger("docs-guard");
 const debug = log.debug;
 const warn = log.warn;
@@ -320,35 +321,14 @@ async function main() {
       // Allow: exit 0, no output needed
       process.exit(0);
     } else {
-      // Block: PreToolUse deny contract
-      // Docs: { hookSpecificOutput: { permissionDecision }, systemMessage }
-      // hookEventName: not in docs, but runtime requires it (removing it caused the 4-day bypass — cf1c742)
-      // permissionDecisionReason: not in docs, but harmless and aids debugging
-      const output = JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: "PreToolUse",
-          permissionDecision: "deny",
-          permissionDecisionReason: result.reason,
-        },
-        systemMessage: result.reason,
-      });
-      process.stdout.write(output + "\n");
+      process.stdout.write(denyOutput(result.reason));
       process.exit(0);
     }
   } catch (e) {
     logError("Gate failed", { error: e.message, stack: e.stack });
     // D1: Fail-CLOSED on internal errors — silent allow was the 4-day bypass
     const errMsg = "GATE INTERNAL ERROR: docs-guard crashed. Blocking as precaution. Error: " + (e.message || "unknown") + ". Try the operation again. If this persists, check the docs-guard log in your temp directory for details.";
-    // See deny block above for contract notes on hookEventName/permissionDecisionReason
-    const output = JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "deny",
-        permissionDecisionReason: errMsg,
-      },
-      systemMessage: errMsg,
-    });
-    process.stdout.write(output + "\n");
+    process.stdout.write(denyOutput(errMsg));
     process.exit(0);
   }
 }

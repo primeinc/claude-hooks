@@ -28,7 +28,7 @@ function parseOutput(stdout) {
     const parsed = JSON.parse(stdout);
     const out = parsed?.hookSpecificOutput;
     if (out?.permissionDecision === "deny") {
-      return { blocked: true, reason: parsed.systemMessage || "" };
+      return { blocked: true, reason: out.permissionDecisionReason || parsed.systemMessage || "" };
     }
   } catch {}
   return null;
@@ -428,11 +428,7 @@ function verifyBlockContract(label, cmd) {
     return;
   }
 
-  if (!parsed.systemMessage || typeof parsed.systemMessage !== "string") {
-    fail++;
-    console.log(`FAIL: ${label} (missing or non-string systemMessage)`);
-    return;
-  }
+  // systemMessage removed to fix triple-render — reason is in permissionDecisionReason only
 
   pass++;
 }

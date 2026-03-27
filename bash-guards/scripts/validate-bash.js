@@ -17,6 +17,7 @@ const bashLog = createLogger("bash-guards");
 
 const { readFileSync } = require("fs");
 const { join } = require("path");
+const { denyOutput } = require("../../lib/hook-output");
 
 // ── Load rules ───────────────────────────────────────────────────────
 
@@ -687,11 +688,7 @@ process.stdin.on("end", () => {
   try { parsed = JSON.parse(input); } catch (e) {
     // D3: Fail-closed on malformed JSON — silent allow was a bypass vector
     bashLog.error("Malformed JSON stdin", { error: e.message, inputPreview: input.slice(0, 200) });
-    const output = JSON.stringify({
-      hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "BASH GUARD ERROR: Could not parse hook input. Blocking as precaution." },
-      systemMessage: "BASH GUARD ERROR: Could not parse hook input. Blocking as precaution. Try running your command again. If this persists, check that the hook runner is sending valid JSON to stdin.",
-    });
-    process.stdout.write(output + "\n");
+    process.stdout.write(denyOutput("BASH GUARD ERROR: Could not parse hook input. Blocking as precaution."));
     process.exit(0);
   }
   setContext({ session_id: parsed?.session_id, hook_event_name: parsed?.hook_event_name, tool_name: parsed?.tool_name });
@@ -704,15 +701,7 @@ process.stdin.on("end", () => {
   const result = evaluate(cmd);
   if (result) {
     bashLog.info("Blocked", { rule: result.ruleId || "unknown", reason: result.reason, command: cmd.slice(0, 100) });
-    const output = JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "deny",
-        permissionDecisionReason: result.reason,
-      },
-      systemMessage: result.reason,
-    });
-    process.stdout.write(output + "\n");
+    process.stdout.write(denyOutput(result.reason));
     process.exit(0);
   }
 
@@ -720,15 +709,7 @@ process.stdin.on("end", () => {
   const stdResult = checkPackageJsonStandards(cmd, cwd);
   if (stdResult) {
     bashLog.info("Blocked (standards)", { reason: stdResult.reason, command: cmd.slice(0, 100) });
-    const output = JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "deny",
-        permissionDecisionReason: stdResult.reason,
-      },
-      systemMessage: stdResult.reason,
-    });
-    process.stdout.write(output + "\n");
+    process.stdout.write(denyOutput(stdResult.reason));
     process.exit(0);
   }
 
