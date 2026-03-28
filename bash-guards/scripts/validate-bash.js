@@ -230,8 +230,21 @@ function checkRule(rule, cmd, args, fullPath, isInPipe, pipeline, segIdx, rawCom
 
     case "banned-pipe-source":
       if (segIdx !== 0 || pipeline.segments.length <= 1) return null;
-      if (!isTestCommand(cmd, args)) return null;
-      return rule.message;
+      if (rule.commands) {
+        if (!rule.commands.includes(cmd)) return null;
+        // Whitelist mode: allow if first arg is in the safe list
+        if (rule.allow_subcommands && rule.allow_subcommands.includes(args[0])) return null;
+        // Blacklist mode: block only if args match a chain
+        if (rule.subcommand_chains) {
+          const match = rule.subcommand_chains.some(chain =>
+            chain.every((part, i) => args[i] === part)
+          );
+          if (!match) return null;
+        }
+      } else {
+        if (!isTestCommand(cmd, args)) return null;
+      }
+      return formatMsg(rule.message, { cmd });
 
     case "banned-subcommand":
       if (!rule.commands.includes(cmd)) return null;

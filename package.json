@@ -1,6 +1,6 @@
 {
   "name": "@primeinc/claude-hooks",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "private": true,
   "description": "Deterministic frustration detection, AST-based bash command guards, and docs-before-code enforcement for Claude Code",
   "author": "primeinc",

@@ -114,6 +114,48 @@ check("block", "node --test piped",        "node --test | cat",            msg("
 check("allow", "echo test piped",          "echo test | cat");
 check("allow", "node script with test in name piped", "node test-guards.js | cat");
 
+// ── Rule: piping azd output (whitelist — safe subcommands allowed) ──
+check("block", "azd provision piped",       "azd provision --preview 2>&1 | rg.exe identity",  msg("no-azd-pipe", {cmd:"azd"}));
+check("block", "azd deploy piped",          "azd deploy | cat",                                 msg("no-azd-pipe", {cmd:"azd"}));
+check("block", "azd up piped",              "azd up | rg.exe error",                            msg("no-azd-pipe", {cmd:"azd"}));
+check("block", "azd down piped",            "azd down | cat",                                   msg("no-azd-pipe", {cmd:"azd"}));
+check("block", "azd package piped",         "azd package | cat",                                msg("no-azd-pipe", {cmd:"azd"}));
+check("block", "azd publish piped",         "azd publish myapp | cat",                          msg("no-azd-pipe", {cmd:"azd"}));
+check("block", "azd restore piped",         "azd restore | cat",                                msg("no-azd-pipe", {cmd:"azd"}));
+check("block", "azd provision after &&",    "cd infra && azd provision | cat",                  msg("no-azd-pipe", {cmd:"azd"}));
+check("allow", "azd env piped (safe)",      "azd env list | rg.exe dev");
+check("allow", "azd version piped (safe)",  "azd version | rg.exe cli");
+check("allow", "azd show piped (safe)",     "azd show | cat");
+check("allow", "azd config piped (safe)",   "azd config show | cat");
+check("allow", "azd template piped (safe)", "azd template list | cat");
+check("allow", "azd auth piped (safe)",     "azd auth status | cat");
+check("allow", "azd provision no pipe",     "azd provision --preview 2>&1");
+check("allow", "azd deploy no pipe",        "azd deploy 2>&1");
+
+// ── Rule: piping az output (blacklist — specific long-running subcommands) ──
+check("block", "az deployment sub what-if piped",   "az deployment sub what-if --location eastus2 | rg.exe error",  msg("no-az-pipe", {cmd:"az"}));
+check("block", "az deployment sub create piped",    "az deployment sub create --template-file main.bicep | cat",    msg("no-az-pipe", {cmd:"az"}));
+check("block", "az deployment group create piped",  "az deployment group create -g rg --template-file x | cat",     msg("no-az-pipe", {cmd:"az"}));
+check("block", "az bicep restore piped",            "az bicep restore --target br/public:avm/foo | cat",            msg("no-az-pipe", {cmd:"az"}));
+check("block", "az bicep upgrade piped",            "az bicep upgrade | cat",                                       msg("no-az-pipe", {cmd:"az"}));
+check("block", "az webapp create piped",            "az webapp create -g rg -n app -p plan | cat",                  msg("no-az-pipe", {cmd:"az"}));
+check("block", "az functionapp create piped",       "az functionapp create -g rg -n func -s stor | cat",            msg("no-az-pipe", {cmd:"az"}));
+check("block", "az containerapp create piped",      "az containerapp create -g rg -n app | cat",                    msg("no-az-pipe", {cmd:"az"}));
+check("block", "az group create piped",             "az group create -n rg -l eastus | cat",                        msg("no-az-pipe", {cmd:"az"}));
+check("block", "az acr build piped",                "az acr build -t img -r myreg . | cat",                        msg("no-az-pipe", {cmd:"az"}));
+check("block", "az vm create piped",                "az vm create -g rg -n vm --image Ubuntu | cat",               msg("no-az-pipe", {cmd:"az"}));
+check("block", "az aks create piped",               "az aks create -g rg -n cluster | cat",                        msg("no-az-pipe", {cmd:"az"}));
+check("block", "az deployment sub what-if after &&","cd infra && az deployment sub what-if | cat",                  msg("no-az-pipe", {cmd:"az"}));
+check("allow", "az provider show piped (safe)",     "az provider show -n Microsoft.App | python -c 'import sys'");
+check("allow", "az bicep build piped (safe)",       "az bicep build --file main.bicep --stdout | cat");
+check("allow", "az bicep lint piped (safe)",        "az bicep lint --file main.bicep | python -c 'import sys'");
+check("allow", "az account show piped (safe)",      "az account show | rg.exe subscriptionId");
+check("allow", "az version piped (safe)",           "az version | rg.exe azure-cli");
+check("allow", "az group list piped (safe)",        "az group list | rg.exe mygroup");
+check("allow", "az bicep list-versions piped",      "az bicep list-versions | python -c 'pass'");
+check("allow", "az deployment sub what-if no pipe", "az deployment sub what-if --location eastus2 2>&1");
+check("allow", "az vm create no pipe",              "az vm create -g rg -n vm --image Ubuntu 2>&1");
+
 // ── Running tests is allowed ──
 check("allow", "npm test",                 "npm test");
 check("allow", "npm run test",             "npm run test");
